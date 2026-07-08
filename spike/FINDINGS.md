@@ -92,3 +92,36 @@ Docker `emscripten/emsdk` image) and wire the pipeline `3MF → mesh buffer → 
 → STL → checker`. `parse3mf`, `buildBinaryStl`, and `analyzeManifold` (Tasks 1–2) are reused as-is.
 Optional hardening: a small in-JS complex-edge cleanup pass (our checker already locates complex
 edges) if strict topological manifoldness is ever required beyond what the slicer accepts.
+
+## Addendum (WASM engine end-to-end)
+
+The ADMesh WASM engine (`spike/wasm/admesh.mjs`) wired through the full pipeline
+(`parse3mf` → `repairWithAdmesh` → `analyzeManifold` gate → `buildBinaryStl`) reproduces the
+native-oracle result on the real fixture `test/fixtures/tripo-broken.3mf`.
+
+`node --max-old-space-size=4096 run-admesh.mjs` (exit 0):
+
+```
+SCALE : { bboxDiagonal: 156.8663996798826, tolerance: 0.00015686639967988259 }
+BEFORE: { openEdges: 22, complexEdges: 5, flippedEdges: 40, nonManifoldEdges: 67,
+          weldedVertices: 938469, triangles: 1876978, degenerateTriangles: 0,
+          signedVolume: 182170.88533812514 }
+AFTER : { openEdges: 0, complexEdges: 2, flippedEdges: 0, nonManifoldEdges: 2,
+          weldedVertices: 938466, triangles: 1876984, degenerateTriangles: 0,
+          signedVolume: 182171.1656840872 }
+VERDICT: REPAIRED ✅
+```
+
+- **Matches the native-oracle baseline exactly:** openEdges 22→0, flippedEdges 40→0, complexEdges→2
+  (equal to `COMPLEX_BASELINE`, so no `WARNING:` line printed). Total non-manifold edges 67→2.
+- **Production slicer reconfirm** — OrcaSlicer `--info` on the WASM-produced
+  `test/fixtures/tripo-admesh-repaired.stl` (~93.8 MB, 1,876,984 facets):
+
+```
+number_of_facets = 1876984
+manifold = yes
+```
+
+The in-process WASM engine yields a mesh the target slicer treats as manifold/printable, identical to
+the native `admesh --fill-holes --normal-directions --normal-values` oracle. The 2 residual complex
+edges remain within the slicer's accepted bar (logged, not gated).
