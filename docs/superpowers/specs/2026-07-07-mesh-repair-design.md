@@ -1,7 +1,7 @@
 # Mesh Repair — Design Spec
 
 **Date:** 2026-07-07
-**Status:** Approved (design), WASM spike FAILED with manifold-3d (rejects non-manifold input; not a repair tool) — repair-engine spike required before build (see spike/FINDINGS.md)
+**Status:** Approved (design). WASM spike done: manifold-3d rejected (not a repair tool); **ADMesh validated** as the repair engine — repairs the real mesh to `manifold = yes` per OrcaSlicer. Next: package ADMesh to WASM (Docker emsdk) + build the pipeline. See spike/FINDINGS.md.
 **Working name:** `mesh-repair`
 
 ## 1. Purpose
