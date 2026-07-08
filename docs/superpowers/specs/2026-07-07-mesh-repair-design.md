@@ -1,7 +1,7 @@
 # Mesh Repair — Design Spec
 
 **Date:** 2026-07-07
-**Status:** Approved (design), pending WASM spike validation
+**Status:** Approved (design), WASM spike FAILED with manifold-3d (rejects non-manifold input; not a repair tool) — repair-engine spike required before build (see spike/FINDINGS.md)
 **Working name:** `mesh-repair`
 
 ## 1. Purpose
