@@ -178,6 +178,10 @@ if [ "$(uname -m)" = "arm64" ]; then
   PLATFORM_FLAG=(--platform linux/amd64)
 fi
 
+# -D__linux__ : ADMesh's portable_endian.h only knows __linux__/__APPLE__/BSD/
+# Windows and #errors otherwise. Emscripten doesn't define __linux__, so without
+# this it hits "platform not supported" and leaves le32toh() undeclared. Defining
+# __linux__ makes it include <endian.h>, which Emscripten's musl sysroot provides.
 docker run --rm "${PLATFORM_FLAG[@]}" -v "$PWD":/src -w /src "$IMAGE" \
   emcc \
     admesh-src/src/connect.c \
@@ -188,6 +192,7 @@ docker run --rm "${PLATFORM_FLAG[@]}" -v "$PWD":/src -w /src "$IMAGE" \
     admesh-src/src/util.c \
     repair_wrapper.c \
     -I admesh-src/src \
+    -D__linux__ \
     -O3 \
     -o admesh.mjs \
     -sMODULARIZE=1 \
