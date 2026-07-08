@@ -122,3 +122,17 @@ export function analyzeManifold(mesh, { tolerance = 1e-4 } = {}) {
     signedVolume,
   };
 }
+
+// Bounding-box diagonal — used by callers to derive a scale-relative
+// tolerance for analyzeManifold. Shared here so run-admesh.mjs and
+// engine.mjs (and any future consumer) don't each maintain their own copy.
+export function bboxDiagonal(vertProperties) {
+  let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
+  for (let i = 0; i < vertProperties.length; i += 3) {
+    const x = vertProperties[i], y = vertProperties[i + 1], z = vertProperties[i + 2];
+    if (x < mnx) mnx = x; if (x > mxx) mxx = x;
+    if (y < mny) mny = y; if (y > mxy) mxy = y;
+    if (z < mnz) mnz = z; if (z > mxz) mxz = z;
+  }
+  return Math.hypot(mxx - mnx, mxy - mny, mxz - mnz);
+}
