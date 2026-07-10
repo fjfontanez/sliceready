@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@mesh-repair/engine": "*",
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/three": "^0.169.0",
     "happy-dom": "^15.11.0",
     "typescript": "^5.6.0",
