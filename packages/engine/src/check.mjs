@@ -4,7 +4,7 @@
 // open (hole/boundary), undirected incidence 2 with opposite directions =
 // healthy manifold edge, undirected incidence 2 with the SAME direction twice
 // = flipped (inverted/inconsistent winding), undirected incidence >2 = complex.
-export function analyzeManifold(mesh, { tolerance = 1e-4 } = {}) {
+export function analyzeManifold(mesh, { tolerance = 1e-4, collectDefectEdges = false, maxDefectEdges = 100_000 } = {}) {
   const { vertProperties, triVerts } = mesh;
   const vertexCount = vertProperties.length / 3;
   const canonical = new Uint32Array(vertexCount);
@@ -101,15 +101,38 @@ export function analyzeManifold(mesh, { tolerance = 1e-4 } = {}) {
   let openEdges = 0;
   let complexEdges = 0;
   let flippedEdges = 0;
+  // Only populated when collectDefectEdges is true. On a badly damaged
+  // multi-million-triangle mesh these arrays are large, so the caller opts in.
+  const openKeys = [];
+  const flippedKeys = [];
   const keys = new Set([...forward.keys(), ...backward.keys()]);
   for (const key of keys) {
     const f = forward.get(key) || 0;
     const b = backward.get(key) || 0;
     const total = f + b;
-    if (total === 1) openEdges++;
+    if (total === 1) { openEdges++; if (collectDefectEdges && openKeys.length < maxDefectEdges) openKeys.push(key); }
     else if (total > 2) complexEdges++;
-    else if (total === 2 && (f === 2 || b === 2)) flippedEdges++; // both uses same direction = orientation defect
+    else if (total === 2 && (f === 2 || b === 2)) { // both uses same direction = orientation defect
+      flippedEdges++;
+      if (collectDefectEdges && flippedKeys.length < maxDefectEdges) flippedKeys.push(key);
+    }
   }
+
+  // Edge keys are `${a}_${b}` over canonical (welded) vertex ids, so both
+  // endpoints resolve through repPosition. Emits the flat vertex-pair layout
+  // THREE.LineSegments reads directly: [x,y,z, x,y,z, ...].
+  const toSegments = (edgeKeys) => {
+    const out = new Float32Array(edgeKeys.length * 6);
+    let i = 0;
+    for (const key of edgeKeys) {
+      const sep = key.indexOf('_');
+      const p = repPosition[Number(key.slice(0, sep))];
+      const q = repPosition[Number(key.slice(sep + 1))];
+      out[i++] = p.x; out[i++] = p.y; out[i++] = p.z;
+      out[i++] = q.x; out[i++] = q.y; out[i++] = q.z;
+    }
+    return out;
+  };
 
   return {
     openEdges,
@@ -120,6 +143,15 @@ export function analyzeManifold(mesh, { tolerance = 1e-4 } = {}) {
     triangles,
     degenerateTriangles,
     signedVolume,
+    defectEdges: collectDefectEdges
+      ? {
+          open: toSegments(openKeys),
+          flipped: toSegments(flippedKeys),
+          // The overlay is a visual cue, not an inventory. Past the cap we stop
+          // collecting; openEdges/flippedEdges still report the true totals.
+          truncated: openEdges > openKeys.length || flippedEdges > flippedKeys.length,
+        }
+      : undefined,
   };
 }
 

@@ -71,3 +71,64 @@ test('a degenerate triangle does not corrupt an otherwise-open edge\'s incidence
   assert.equal(r.flippedEdges, 0);
   assert.equal(r.nonManifoldEdges, 3);
 });
+
+// A cube with its top face (z-max) removed: 10 triangles, a 4-edge square hole.
+// Same fixture shape as engine.test.mjs — ADMesh's 4-triangle floor does not
+// apply to analyzeManifold, but reusing it keeps the expected counts obvious.
+const HOLED_CUBE_V = [
+  [0.13, 0.19, 0.07], [10.37, 0.19, 0.07], [10.37, 10.23, 0.07], [0.13, 10.23, 0.07],
+  [0.13, 0.19, 10.41], [10.37, 0.19, 10.41], [10.37, 10.23, 10.41], [0.13, 10.23, 10.41],
+];
+const HOLED_CUBE_F = [
+  [0, 2, 1], [0, 3, 2],
+  [0, 1, 5], [0, 5, 4],
+  [3, 7, 6], [3, 6, 2],
+  [0, 4, 7], [0, 7, 3],
+  [1, 2, 6], [1, 6, 5],
+];
+function unsharedMesh(v, f) {
+  const vertProperties = new Float32Array(f.length * 9);
+  const triVerts = new Uint32Array(f.length * 3);
+  let vp = 0;
+  for (let t = 0; t < f.length; t++) {
+    for (let c = 0; c < 3; c++) {
+      const [x, y, z] = v[f[t][c]];
+      vertProperties[vp++] = x; vertProperties[vp++] = y; vertProperties[vp++] = z;
+    }
+    triVerts[t * 3] = t * 3; triVerts[t * 3 + 1] = t * 3 + 1; triVerts[t * 3 + 2] = t * 3 + 2;
+  }
+  return { vertProperties, triVerts };
+}
+
+test('analyzeManifold omits defectEdges unless asked', () => {
+  const r = analyzeManifold(unsharedMesh(HOLED_CUBE_V, HOLED_CUBE_F), { tolerance: 1e-4 });
+  assert.equal(r.openEdges, 4);
+  assert.equal(r.defectEdges, undefined);
+});
+
+test('analyzeManifold collects the open-edge segments when asked', () => {
+  const r = analyzeManifold(unsharedMesh(HOLED_CUBE_V, HOLED_CUBE_F), {
+    tolerance: 1e-4,
+    collectDefectEdges: true,
+  });
+  assert.equal(r.openEdges, 4);
+  assert.ok(r.defectEdges.open instanceof Float32Array);
+  // 4 open edges * 2 endpoints * 3 floats
+  assert.equal(r.defectEdges.open.length, 24);
+  assert.equal(r.defectEdges.flipped.length, 0, 'the holed cube is consistently wound');
+  // Every endpoint of the boundary loop lies on the missing top face (z = 10.41).
+  for (let i = 2; i < r.defectEdges.open.length; i += 3) {
+    assert.ok(Math.abs(r.defectEdges.open[i] - 10.41) < 1e-3, `endpoint ${i} is not on the hole rim`);
+  }
+});
+
+test('analyzeManifold caps the collected defect edges and says so', () => {
+  const r = analyzeManifold(unsharedMesh(HOLED_CUBE_V, HOLED_CUBE_F), {
+    tolerance: 1e-4,
+    collectDefectEdges: true,
+    maxDefectEdges: 2,
+  });
+  assert.equal(r.openEdges, 4, 'the count is the true total, not the collected total');
+  assert.equal(r.defectEdges.open.length, 12, 'only 2 edges collected * 6 floats');
+  assert.equal(r.defectEdges.truncated, true);
+});
