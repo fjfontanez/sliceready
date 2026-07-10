@@ -6,9 +6,22 @@ export class AdmeshEngineError extends Error {
 }
 
 let modPromise;
+let moduleOptions = {};
+
+// Supplies Emscripten's options — in practice { locateFile } — before the
+// module is instantiated. A bundler rewrites import.meta.url inside the
+// generated loader, so the default resolution of admesh.wasm cannot be
+// trusted there; the caller, who knows its own asset URLs, hands us one.
+// Must be called before the first repairWithAdmesh: the instance is cached,
+// so a late call would be silently ignored. We throw instead.
+export function configureAdmesh(options) {
+  if (modPromise) throw new AdmeshEngineError('configureAdmesh called after the ADMesh module was instantiated');
+  moduleOptions = options;
+}
+
 function getModule() {
   // Instantiate the Emscripten module once and reuse it.
-  if (!modPromise) modPromise = createAdmesh();
+  if (!modPromise) modPromise = createAdmesh(moduleOptions);
   return modPromise;
 }
 
