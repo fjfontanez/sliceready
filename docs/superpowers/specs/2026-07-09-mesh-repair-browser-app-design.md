@@ -129,7 +129,10 @@ the WASM module, runs `repairMesh`, and transfers the results back.
 | main → worker | `{ type: 'repair', bytes: ArrayBuffer, kind: 'stl' \| '3mf' }` |
 | worker → main | `{ type: 'progress', phase, triangles? }` — one per phase entered; `triangles` is absent for `parse` and carries the parsed triangle count thereafter |
 | worker → main | `{ type: 'done', stl, report, beforeMesh, afterMesh }` |
-| worker → main | `{ type: 'error', message }` |
+| worker → main | `{ type: 'error', message, code? }` |
+
+`code` is `'engine-load'` when the `.wasm` asset could not be fetched or instantiated; the client
+maps it to a distinct user-facing state. Any other error is a mesh the engine ran on and rejected.
 
 Phases, in order: `parse`, `analyze-before`, `repair`, `analyze-after`, `export`.
 
@@ -168,6 +171,15 @@ Camera fits the mesh bounding box. `OrbitControls` for inspection. Geometries ar
 new file is loaded. Per-overlay materials are disposed with them; the shared mesh material is
 disposed once, when the viewer is torn down.
 
+`toBufferGeometry` deliberately computes NO vertex normals. The mesh material sets
+`flatShading: true`, and under `FLAT_SHADED` three.js ignores the normal attribute entirely,
+recomputing the normal from screen-space derivatives in the fragment shader — the pass would walk
+~5.6M vertices per mesh on the real fixture and discard the result. This makes `flatShading` a
+correctness requirement, not a style choice: without normals AND without flat shading,
+`MeshStandardMaterial` renders unlit. The material parameters therefore live in `geometry.ts` as
+`MESH_MATERIAL_PARAMS`, next to the geometry they must match, pinned by a test — `viewer.ts`
+cannot be unit-tested, since it constructs a `WebGLRenderer`.
+
 ## 7. States and error handling
 
 ```
@@ -187,6 +199,11 @@ idle → reading → repairing(phase) → done
 which defects remain, with counts, and still offers the download. The tool never hands back a
 broken file while claiming success. This enforces product spec §5 in code rather than in prose.
 
+The rule reaches the download button, not only the headline. `downloadLabel(ok)` in `state.ts`
+returns `'Download repaired STL'` only when the repair passed, and `'Download result'` otherwise —
+a mesh that did not pass is not a repaired mesh, whatever the file is called. The button is
+rendered on both paths: the file is the user's either way.
+
 `report.warnings` are rendered whenever present, including on a passing repair.
 
 ## 8. Testing
@@ -203,6 +220,9 @@ broken file while claiming success. This enforces product spec §5 in code rathe
   and the report matches the validated baseline. The fixture is ~32 MB and gitignored, so this
   suite is **local-only** and must be explicitly marked as such. A CI run that silently skips it
   must not be reported as a pass.
+- `main.ts` and `viewer.ts` have no unit tests — both require a WebGL context. The end-to-end
+  suite is their only exercise, and it covers the happy path only. The stale-drop guard and the
+  timeout→UI transition are correct by reading, not by test.
 
 ## 9. Deferred
 
