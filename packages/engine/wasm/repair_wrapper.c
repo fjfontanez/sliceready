@@ -61,7 +61,7 @@ int repair(const char *inPath, const char *outPath) {
              0, /* reverse_all_flag        */
              0  /* verbose_flag            */);
 
-  stl_write_binary(&stl, (char *)outPath, "mesh-repair");
+  stl_write_binary(&stl, (char *)outPath, "sliceready");
   int err = stl_get_error(&stl);
   /* Same ADMesh quirk as above: clear the error before the final stl_close()
    * so buffers are freed regardless of outcome, since this module instance is
