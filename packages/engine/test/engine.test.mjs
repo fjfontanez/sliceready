@@ -50,15 +50,27 @@ test('repairMesh rejects an unknown kind', async () => {
 import { buildWarnings, COMPLEX_BASELINE } from '../src/engine.mjs';
 
 test('buildWarnings is silent at or below the slicer-validated baseline', () => {
-  assert.deepEqual(buildWarnings({ complexEdges: COMPLEX_BASELINE }, COMPLEX_BASELINE), []);
-  assert.deepEqual(buildWarnings({ complexEdges: 0 }, COMPLEX_BASELINE), []);
+  assert.deepEqual(buildWarnings({}, { complexEdges: COMPLEX_BASELINE }, COMPLEX_BASELINE), []);
+  assert.deepEqual(buildWarnings({}, { complexEdges: 0 }, COMPLEX_BASELINE), []);
 });
 
 test('buildWarnings warns above the baseline and names both numbers', () => {
-  const warnings = buildWarnings({ complexEdges: 7 }, COMPLEX_BASELINE);
+  const warnings = buildWarnings({}, { complexEdges: 7 }, COMPLEX_BASELINE);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /7/);
   assert.match(warnings[0], /2/);
+});
+
+test('buildWarnings warns when the repair introduced degenerate triangles', () => {
+  const warnings = buildWarnings({ degenerateTriangles: 1 }, { degenerateTriangles: 5 });
+  assert.equal(warnings.length, 1, 'the 4 introduced zero-area faces must be surfaced, not dropped');
+  assert.match(warnings[0], /4/, 'names how many were introduced (5 - 1)');
+  assert.match(warnings[0], /degenerate/i);
+});
+
+test('buildWarnings never flags a decrease or an unchanged degenerate count', () => {
+  assert.deepEqual(buildWarnings({ degenerateTriangles: 5 }, { degenerateTriangles: 1 }), [], 'a decrease is a fix, not a warning');
+  assert.deepEqual(buildWarnings({ degenerateTriangles: 3 }, { degenerateTriangles: 3 }), [], 'no change is silent');
 });
 
 test('repairMesh reports phases in order, with triangle counts after parse', async () => {
