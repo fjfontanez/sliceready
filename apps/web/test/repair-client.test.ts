@@ -111,6 +111,40 @@ describe('repairInWorker', () => {
     await expect(promise).resolves.toBeDefined();
   });
 
+  it('ignores a malformed progress with no phase and lets the previous deadline run', async () => {
+    const worker = new FakeWorker();
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
+
+    worker.emit({ type: 'progress', phase: 'repair', triangles: 16 });
+    // A message with no phase falls through the `&& msg.phase` guard: it must
+    // touch nothing, leaving the repair deadline armed. A refactor that let it
+    // disarm the timer instead would open a hole this test pins shut.
+    worker.emit({ type: 'progress' });
+    await vi.advanceTimersByTimeAsync(phaseBudgetMs('repair', 16) + 1);
+
+    await expect(promise).rejects.toBeInstanceOf(RepairTimeoutError);
+    await expect(promise).rejects.toMatchObject({ phase: 'repair' });
+    expect(worker.terminated).toBe(1);
+  });
+
+  it('extends the deadline when a phase reports in twice (heartbeat semantics)', async () => {
+    const worker = new FakeWorker();
+    const promise = repairInWorker(worker, new ArrayBuffer(884), 'stl');
+
+    worker.emit({ type: 'progress', phase: 'repair', triangles: 16 });
+    await vi.advanceTimersByTimeAsync(phaseBudgetMs('repair', 16) - 1);
+    // A duplicate for the same phase is a heartbeat: it re-arms the budget. Had
+    // the deadline been dropped instead of extended, the next tick past the
+    // ORIGINAL budget would terminate — so advancing another near-full budget
+    // and staying alive is what proves the extension.
+    worker.emit({ type: 'progress', phase: 'repair', triangles: 16 });
+    await vi.advanceTimersByTimeAsync(phaseBudgetMs('repair', 16) - 1);
+
+    expect(worker.terminated).toBe(0);
+    worker.emit(DONE);
+    await expect(promise).resolves.toBeDefined();
+  });
+
   it('rejects and terminates when the worker reports an engine error', async () => {
     const worker = new FakeWorker();
     const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
