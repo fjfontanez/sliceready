@@ -20,3 +20,8 @@ node_modules/
 
 # ADMesh source clone (fetched by spike/wasm/build.sh; pinned via ADMESH-SOURCE-COMMIT.txt)
 **/admesh-src/
+
+# Build and test output
+dist/
+test-results/
+playwright-report/
