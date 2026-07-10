@@ -8,6 +8,18 @@ export default defineConfig({
   // externalize it, and its .wasm asset must be emitted as a real file.
   assetsInclude: ['**/*.wasm'],
   worker: { format: 'es' },
+  // Vite's dep optimizer only walks static imports from HTML entry points; it
+  // never crawls into the Worker's own graph (repair.worker.ts -> engine.mjs
+  // -> fflate) until something constructs the Worker at runtime. On a cold
+  // `.vite` cache that first drop discovers fflate as a new dependency mid-
+  // repair, forces a full-page reload to re-optimize, and silently drops the
+  // user's selected File — no exception, just a second "[vite] connected." in
+  // the console and the UI stuck on "Reading the file...". Pre-declaring
+  // fflate here makes the optimizer bundle it up front, so nothing new is
+  // discovered when the Worker starts. Do not remove this as "unnecessary":
+  // it only fails on a cold cache, so a warm-cache dev session will look fine
+  // without it.
+  optimizeDeps: { include: ['fflate'] },
   test: {
     environment: 'happy-dom',
     include: ['test/**/*.test.ts'],
