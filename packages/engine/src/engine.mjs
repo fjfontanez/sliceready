@@ -12,12 +12,27 @@ export const COMPLEX_BASELINE = 2;
 
 // Surfaced through report.warnings so the UI can render them. A console.warn
 // here would be invisible to the only person who needs to see it: the user.
-export function buildWarnings(after, baseline = COMPLEX_BASELINE) {
+export function buildWarnings(before, after, baseline = COMPLEX_BASELINE) {
   const warnings = [];
   if (after.complexEdges > baseline) {
     warnings.push(
       `${after.complexEdges} complex edges remain, above the slicer-validated baseline of ${baseline}. `
       + 'The repaired mesh may still fail to slice — check it in your slicer before printing.',
+    );
+  }
+  // A repair that INTRODUCES degenerate (zero-area) triangles is a regression a
+  // slicer can choke on. It is not in `pass` on purpose: pass tracks the real
+  // slice-blockers (open/flipped edges, volume), and failing it here would call
+  // a genuinely watertight mesh "not repaired" over theoretical zero-area faces.
+  // So we warn — the same stance as COMPLEX_BASELINE above — and never drop the
+  // negative delta silently. Theoretical: ADMesh has not been observed doing
+  // this on the real Tripo fixture, which is why there is no end-to-end repro.
+  const introduced = (after.degenerateTriangles ?? 0) - (before.degenerateTriangles ?? 0);
+  if (introduced > 0) {
+    const noun = introduced === 1 ? 'triangle' : 'triangles';
+    warnings.push(
+      `The repair introduced ${introduced} degenerate (zero-area) ${noun}. `
+      + 'These can cause a slicer to choke — check the repaired mesh in your slicer before printing.',
     );
   }
   return warnings;
@@ -53,7 +68,7 @@ export async function repairMesh(fileBytes, kind, { onProgress = () => {}, colle
   onProgress('export', { triangles });
   return {
     stl: buildBinaryStl(mesh),
-    report: { before, after, pass, warnings: buildWarnings(after) },
+    report: { before, after, pass, warnings: buildWarnings(before, after) },
     beforeMesh: parsed,
     afterMesh: mesh,
   };

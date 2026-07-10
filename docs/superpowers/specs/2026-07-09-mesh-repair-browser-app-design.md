@@ -191,9 +191,18 @@ idle → reading → repairing(phase) → done
 | Condition | Behavior |
 |---|---|
 | Unsupported or corrupt file | Clear message, return to `idle`. No crash. |
-| Over the soft size cap | Warning with an explicit "proceed anyway" action. Never a hard rejection. |
+| Over the soft size cap | A visible warning is shown and the repair proceeds automatically. Never blocks, never a hard rejection. |
 | Watchdog deadline expired | Worker terminated. Message explains the model may be too complex. |
 | WASM fails to load | Graceful message; the tool is unusable but the page is not broken. |
+
+**Soft cap — warn, don't gate.** The over-cap row warns and proceeds rather than gating behind
+a "proceed anyway" button (an earlier draft of this spec promised such an action; the code never
+implemented it and this row is now the source of truth). The tool's contract is zero-friction
+drop-and-repair, and `validateFile` already encodes the stance in code: *the user knows their
+machine*. The warning is written to a persistent `notice` element, separate from `status` so
+`render()` cannot overwrite it — the user gets the information a confirmation dialog would carry,
+without a click and without adding a confirm state to the machine above. Never blocking is the
+safer default; an explicit gate would trade that away for friction with no safety gain.
 
 **Honest reporting rule.** If `report.pass` is `false`, the UI does not say "repaired". It states
 which defects remain, with counts, and still offers the download. The tool never hands back a
