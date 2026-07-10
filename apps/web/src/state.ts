@@ -34,6 +34,14 @@ export function errorMessageFor(error: unknown): string {
   return 'Something went wrong. Try reloading the page.';
 }
 
+// The honest-reporting rule reaches the button, not just the headline: a mesh that
+// did not pass is not a "repaired" mesh, whatever the file is called. Pure and
+// exported so a test can hold it to that — main.ts cannot be unit-tested (it
+// constructs a WebGLRenderer).
+export function downloadLabel(ok: boolean): string {
+  return ok ? 'Download repaired STL' : 'Download result';
+}
+
 export function phaseLabel(phase: Phase): string {
   const labels: Record<Phase, string> = {
     'parse': 'Reading the mesh…',
