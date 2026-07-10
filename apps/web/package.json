@@ -11,6 +11,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.2.10",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.8",
     "@sliceready/engine": "*",
     "three": "^0.169.0"
   },
