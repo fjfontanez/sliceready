@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch cancels the older run. The e2e boots a real
+# browser; there is no point racing two of them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # The 30 MB Tripo fixture is gitignored and cannot exist on a runner.
+      # This opts out of repair.e2e.ts ONLY; smoke.e2e.ts still drives the real
+      # app, the real Worker and the real WASM module in a real Chromium, using
+      # a 10-triangle mesh it builds in memory. The browser is what catches the
+      # wiring bugs; the triangle count only measures speed.
+      MESH_REPAIR_SKIP_E2E: '1'
+      # gga is an AI reviewer. It runs on a human's machine before opening a PR,
+      # not on every push.
+      SKIP_GGA: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # pre-pr.sh derives its commit range from `git merge-base main HEAD`.
+          # A shallow clone has no merge base.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24 is not incidental: `node --test <dir>` fails here and passes
+          # on Node 18. Pinning the floor is what stops that trap coming back.
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run every gate
+        # One script, the same one a human runs before opening a PR. It reads
+        # exit codes, never summary lines: `npm test` prints "41 passed" and
+        # exits 1 when a fake-timer rejection had no handler attached.
+        run: .claude/skills/pre-pr-checks/assets/pre-pr.sh
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

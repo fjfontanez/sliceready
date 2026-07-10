@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/engine.mjs",
     "./check": "./src/check.mjs",
+    "./stl": "./src/stl.mjs",
     "./wasm/admesh.wasm": "./wasm/admesh.wasm"
   },
   "scripts": {
