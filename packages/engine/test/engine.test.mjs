@@ -46,3 +46,50 @@ test('repairMesh repairs a holed STL and reports pass', async () => {
 test('repairMesh rejects an unknown kind', async () => {
   await assert.rejects(() => repairMesh(new Uint8Array([0]), 'obj'), /unsupported/i);
 });
+
+import { buildWarnings, COMPLEX_BASELINE } from '../src/engine.mjs';
+
+test('buildWarnings is silent at or below the slicer-validated baseline', () => {
+  assert.deepEqual(buildWarnings({ complexEdges: COMPLEX_BASELINE }, COMPLEX_BASELINE), []);
+  assert.deepEqual(buildWarnings({ complexEdges: 0 }, COMPLEX_BASELINE), []);
+});
+
+test('buildWarnings warns above the baseline and names both numbers', () => {
+  const warnings = buildWarnings({ complexEdges: 7 }, COMPLEX_BASELINE);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /7/);
+  assert.match(warnings[0], /2/);
+});
+
+test('repairMesh reports phases in order, with triangle counts after parse', async () => {
+  const stlIn = buildBinaryStl(buf(V, F));
+  const seen = [];
+  await repairMesh(stlIn, 'stl', { onProgress: (phase, info) => seen.push([phase, info]) });
+
+  assert.deepEqual(
+    seen.map(([phase]) => phase),
+    ['parse', 'analyze-before', 'repair', 'analyze-after', 'export'],
+  );
+  assert.deepEqual(seen[0][1], {}, 'triangle count is unknown before parsing');
+  for (const [phase, info] of seen.slice(1)) {
+    assert.equal(info.triangles, 10, `phase ${phase} should carry the parsed triangle count`);
+  }
+});
+
+test('repairMesh returns both geometries and an empty warnings array on a clean repair', async () => {
+  const stlIn = buildBinaryStl(buf(V, F));
+  const { report, beforeMesh, afterMesh } = await repairMesh(stlIn, 'stl');
+
+  assert.deepEqual(report.warnings, []);
+  assert.ok(beforeMesh.vertProperties instanceof Float32Array);
+  assert.ok(afterMesh.triVerts instanceof Uint32Array);
+  assert.equal(beforeMesh.triVerts.length / 3, 10, 'before = the 10-triangle holed cube');
+  assert.ok(afterMesh.triVerts.length / 3 >= 10, 'after = the cube with the hole filled');
+});
+
+test('repairMesh passes defect edges through when asked', async () => {
+  const stlIn = buildBinaryStl(buf(V, F));
+  const { report } = await repairMesh(stlIn, 'stl', { collectDefectEdges: true });
+  assert.equal(report.before.defectEdges.open.length, 24, '4 open edges * 2 endpoints * 3 floats');
+  assert.equal(report.after.defectEdges.open.length, 0, 'the hole is closed');
+});
