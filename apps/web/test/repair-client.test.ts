@@ -121,6 +121,15 @@ describe('repairInWorker', () => {
     expect(worker.terminated).toBe(1);
   });
 
+  it('maps an engine-load failure to EngineLoadError, not a raw engine message', async () => {
+    const worker = new FakeWorker();
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
+    worker.emit({ type: 'error', message: 'ADMesh WASM module failed to load', code: 'engine-load' });
+
+    await expect(promise).rejects.toBeInstanceOf(EngineLoadError);
+    expect(worker.terminated).toBe(1);
+  });
+
   it('reports an engine load failure when the worker fires an error event', async () => {
     const worker = new FakeWorker();
     const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
