@@ -3,8 +3,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MESH_MATERIAL_PARAMS, toBufferGeometry, toLineGeometry } from './geometry';
 import type { DefectEdges, MeshBuffers } from './repair-client';
 
-const OPEN_EDGE_COLOR = 0xff2d2d;
-const FLIPPED_EDGE_COLOR = 0xffa500;
+// The two defect colors are the "Filament and Steel" tokens, so the overlay
+// matches the ledger: oxblood is the damage color (the ledger's "before" column
+// is oxblood too), steel names the second defect class. Molten is deliberately
+// NOT used here — it means "repaired", and a defect must never wear it.
+const OPEN_EDGE_COLOR = 0xc23a2d; // oxblood
+const FLIPPED_EDGE_COLOR = 0x6a7280; // steel
 
 export interface Viewer {
   show(before: MeshBuffers, after: MeshBuffers, defects?: DefectEdges): void;

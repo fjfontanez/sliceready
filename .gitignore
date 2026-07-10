@@ -25,3 +25,6 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+
+# Agent worktrees (scratch, auto-managed)
+.claude/worktrees/
