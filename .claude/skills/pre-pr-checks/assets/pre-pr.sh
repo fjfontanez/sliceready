@@ -83,17 +83,20 @@ else
   RANGE="$MERGE_BASE..HEAD"
 fi
 
+# --no-merges throughout: on a `pull_request` event GitHub checks out a synthetic
+# "Merge <sha> into <sha>" commit. Nobody wrote that subject, and judging it as a
+# conventional commit fails every PR.
 if [ -z "$RANGE" ]; then
   record "no AI attribution" "SKIP" "no commit range"
   record "conventional commits" "SKIP" "no commit range"
-elif git log --format='%b' "$RANGE" | grep -Eiq 'co-authored-by|generated with|🤖'; then
+elif git log --no-merges --format='%b' "$RANGE" | grep -Eiq 'co-authored-by|generated with|🤖'; then
   record "no AI attribution" "FAIL" "found in a commit body"
 else
   record "no AI attribution" "PASS"
 fi
 
 if [ -n "$RANGE" ]; then
-  BAD_SUBJECTS=$(git log --format='%s' "$RANGE" \
+  BAD_SUBJECTS=$(git log --no-merges --format='%s' "$RANGE" \
     | grep -vE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9/-]+\))?!?: .+' || true)
   if [ -z "$BAD_SUBJECTS" ]; then
     record "conventional commits" "PASS"
