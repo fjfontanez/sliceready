@@ -1,7 +1,7 @@
 # Mesh Repair — Design Spec
 
 **Date:** 2026-07-07
-**Status:** Approved (design), pending WASM spike validation
+**Status:** Approved (design). WASM spike done: manifold-3d rejected (not a repair tool); **ADMesh validated** as the repair engine — repairs the real mesh to `manifold = yes` per OrcaSlicer. ADMesh WASM engine built and validated end-to-end. Next: the browser app — see `2026-07-09-mesh-repair-browser-app-design.md`. See spike/FINDINGS.md.
 **Working name:** `mesh-repair`
 
 ## 1. Purpose
@@ -79,7 +79,9 @@ Candidate libraries (final choice pending the spike in §6):
 - **Repair worker** — Web Worker wrapping the WASM engine; receives mesh, returns repaired
   mesh + a report (what was fixed, counts).
 - **Viewer** — three.js before/after preview with a simple toggle.
-- **Exporter** — writes repaired mesh back to STL / 3MF for download.
+- **Exporter** — writes the repaired mesh back to **binary STL** for download. 3MF export is
+  deferred (tracked as a GitHub issue): ADMesh operates on bare geometry, so a written-back 3MF
+  would silently drop the original container's materials, colors and transforms.
 - **Promo shell** — layout, copy, privacy messaging, SliceMargin CTA.
 
 Each unit communicates through a plain mesh-buffer interface and can be tested in isolation.

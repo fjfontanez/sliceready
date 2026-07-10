@@ -1,0 +1,27 @@
+# OS / editor cruft
+.DS_Store
+**/.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Tooling caches / local state
+.atl/
+
+# Node
+node_modules/
+**/node_modules/
+
+# Large mesh fixtures & generated outputs (never commit these)
+*.stl
+*.3mf
+**/test/fixtures/*.stl
+**/test/fixtures/*.3mf
+
+# ADMesh source clone (fetched by spike/wasm/build.sh; pinned via ADMESH-SOURCE-COMMIT.txt)
+**/admesh-src/
+
+# Build and test output
+dist/
+test-results/
+playwright-report/

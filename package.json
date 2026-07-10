@@ -1,0 +1,11 @@
+{
+  "name": "mesh-repair",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web"
+  }
+}

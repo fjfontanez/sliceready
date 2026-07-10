@@ -1,0 +1,17 @@
+{
+  "name": "@mesh-repair/engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/engine.mjs",
+    "./check": "./src/check.mjs",
+    "./wasm/admesh.wasm": "./wasm/admesh.wasm"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  }
+}

@@ -1,0 +1,3 @@
+node_modules/
+test/fixtures/*.3mf
+test/fixtures/*.stl
