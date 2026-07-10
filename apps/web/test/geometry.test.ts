@@ -13,12 +13,12 @@ describe('toBufferGeometry', () => {
     expect(geometry.getIndex()!.count).toBe(3);
   });
 
-  it('computes vertex normals so the mesh is not rendered flat black', () => {
+  it('does not compute vertex normals — the viewer flat-shades in the fragment shader', () => {
     const mesh = {
       vertProperties: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
       triVerts: new Uint32Array([0, 1, 2]),
     };
-    expect(toBufferGeometry(mesh).getAttribute('normal')).toBeDefined();
+    expect(toBufferGeometry(mesh).getAttribute('normal')).toBeUndefined();
   });
 });
 

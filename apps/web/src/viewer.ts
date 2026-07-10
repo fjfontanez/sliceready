@@ -28,6 +28,9 @@ export function createViewer(host: HTMLElement): Viewer {
   const group = new THREE.Group();
   scene.add(group);
 
+  // flatShading is load-bearing, not cosmetic: the geometry built in toBufferGeometry
+  // carries no normal attribute (see geometry.ts). Without flatShading, three.js reads
+  // the missing normal attribute and MeshStandardMaterial renders unlit.
   const material = new THREE.MeshStandardMaterial({ color: 0x9bb7d4, flatShading: true });
   let beforeMesh: THREE.Mesh | undefined;
   let afterMesh: THREE.Mesh | undefined;
