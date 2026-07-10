@@ -2,7 +2,7 @@ import createAdmesh from '../wasm/admesh.mjs';
 import { buildBinaryStl, parseBinaryStl } from './stl.mjs';
 
 export class AdmeshEngineError extends Error {
-  constructor(message) { super(message); this.name = 'AdmeshEngineError'; }
+  constructor(message) { super(message); this.name = 'AdmeshEngineError'; this.code = undefined; }
 }
 
 let modPromise;
@@ -20,8 +20,21 @@ export function configureAdmesh(options) {
 }
 
 function getModule() {
-  // Instantiate the Emscripten module once and reuse it.
-  if (!modPromise) modPromise = createAdmesh(moduleOptions);
+  // Instantiate the Emscripten module once and reuse it. A rejection here means
+  // the .wasm asset could not be fetched or instantiated — a different failure
+  // from "the engine ran and rejected this mesh", and the UI says so. Tag it at
+  // the source; by the time it crosses a Worker boundary only the message survives.
+  if (!modPromise) {
+    modPromise = createAdmesh(moduleOptions).catch((cause) => {
+      const error = new AdmeshEngineError('ADMesh WASM module failed to load');
+      error.code = 'engine-load';
+      // Do not cache a rejected promise: a transient network failure should not
+      // poison every later repair in this session.
+      modPromise = undefined;
+      error.cause = cause;
+      throw error;
+    });
+  }
   return modPromise;
 }
 

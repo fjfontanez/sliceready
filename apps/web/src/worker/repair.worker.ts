@@ -29,6 +29,9 @@ self.onmessage = async (event: MessageEvent<{ bytes: ArrayBuffer; kind: MeshKind
     ];
     self.postMessage({ type: 'done', stl, report, beforeMesh, afterMesh }, transfer);
   } catch (error) {
-    self.postMessage({ type: 'error', message: (error as Error).message });
+    const failure = error as Error & { code?: string };
+    // `code` survives here but not across postMessage's structured clone of an
+    // Error, so it becomes an explicit field on the message.
+    self.postMessage({ type: 'error', message: failure.message, code: failure.code });
   }
 };

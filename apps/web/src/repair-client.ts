@@ -145,7 +145,7 @@ export function repairInWorker(
 
     worker.onmessage = ({ data }): void => {
       if (settled) return;
-      const msg = data as { type: string; phase?: Phase; triangles?: number; message?: string } & Partial<RepairResult>;
+      const msg = data as { type: string; phase?: Phase; triangles?: number; message?: string; code?: string } & Partial<RepairResult>;
 
       if (msg.type === 'progress' && msg.phase) {
         if (typeof msg.triangles === 'number') triangles = msg.triangles;
@@ -163,7 +163,11 @@ export function repairInWorker(
         return;
       }
       if (msg.type === 'error') {
-        fail(new RepairFailedError(msg.message ?? 'the repair failed'));
+        // A failure to load the .wasm asset is a distinct user-facing state from a
+        // mesh the engine ran on and rejected. See state.ts's errorMessageFor.
+        fail(msg.code === 'engine-load'
+          ? new EngineLoadError()
+          : new RepairFailedError(msg.message ?? 'the repair failed'));
       }
     };
 
