@@ -6,8 +6,33 @@ Worker via an ADMesh WASM build.
 
 ## Tests
 
+Before opening a pull request, run every gate at once:
+
+```bash
+.claude/skills/pre-pr-checks/assets/pre-pr.sh
+```
+
+It prints a table and exits non-zero if any gate fails. CI runs the same script.
+Read the exit code, never the summary line — Vitest prints `41 passed` and exits
+`1` when a promise rejected inside a fake timer with no handler attached.
+
+Individually:
+
 - `npm test` — engine (`node:test`) and app (Vitest) unit tests. Runs in CI.
-- `npm run test:e2e -w @mesh-repair/web` — **local only.** Needs the ~32 MB
-  gitignored fixture `packages/engine/test/fixtures/tripo-broken.3mf`. It fails
-  loudly if the fixture is missing. Set `MESH_REPAIR_SKIP_E2E=1` to opt out on
-  purpose — never let a silent skip be reported as a pass.
+- `npm run build -w @mesh-repair/web` — `tsc --noEmit && vite build`. The only
+  type check there is: Vitest transpiles with esbuild and never checks types, so
+  a green test run says nothing about whether the app compiles.
+- `npm run test:e2e -w @mesh-repair/web` — Playwright, against the **production
+  build**, never the dev server. Two specs:
+  - `smoke.e2e.ts` builds a 10-triangle holed cube in memory and always runs.
+    This is what CI runs. A real Chromium drives the real Worker and the real
+    WASM module; the browser is what catches wiring bugs, and the triangle count
+    only measures speed.
+  - `repair.e2e.ts` needs the ~30 MB gitignored fixture
+    `packages/engine/test/fixtures/tripo-broken.3mf` and **fails loudly** when it
+    is absent. `MESH_REPAIR_SKIP_E2E=1` opts out of this spec alone — use it to
+    state a limit honestly, never to reach green.
+
+`main.ts` and `viewer.ts` have no unit tests: both construct a `WebGLRenderer`,
+which happy-dom cannot provide. The e2e is their only exercise, and it covers the
+happy path only.
