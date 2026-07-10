@@ -65,8 +65,8 @@ Excluded: test files, `*.d.ts`, and `admesh.mjs` (generated Emscripten glue).
 ### Boundaries
 
 - REJECT if anything under `apps/` imports `packages/engine/src/*` by relative path. The only
-  legal specifiers are `@mesh-repair/engine`, `@mesh-repair/engine/check`, and
-  `@mesh-repair/engine/wasm/admesh.wasm?url`.
+  legal specifiers are `@sliceready/engine`, `@sliceready/engine/check`, and
+  `@sliceready/engine/wasm/admesh.wasm?url`.
 - REJECT if `as any` or `as unknown as` appears. `as BlobPart` in `download.ts` is sanctioned and
   documented: TypeScript ≥ 5.9 narrowed `BlobPart`, and `Uint8Array<ArrayBufferLike>` admits
   `SharedArrayBuffer`, which this app never creates.
@@ -134,7 +134,7 @@ be interrupted cooperatively, and `worker.terminate()` from the main thread is t
   Vitest reports every test as passed and exits `1` with `Errors: 1 error`.
 - REJECT if a suite is declared green on assertion counts alone. Check the exit code.
 - REJECT if the Playwright e2e is made to skip when its fixture is missing. It must fail loudly;
-  `MESH_REPAIR_SKIP_E2E=1` is the deliberate opt-out.
+  `SLICEREADY_SKIP_E2E=1` is the deliberate opt-out.
 - REQUIRE the e2e to run against the production build (`vite build && vite preview`), never the
   dev server. It must exercise the artifact users receive.
 - PREFER testing a pure function extracted from untestable glue over contorting the glue.

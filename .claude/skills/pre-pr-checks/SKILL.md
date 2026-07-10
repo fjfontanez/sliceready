@@ -31,7 +31,7 @@ Do not load for a docs-only change that touches no file matched by `.gga`'s `FIL
 |---|---|
 | Diff touches `packages/engine/` or `apps/web/src/` | Run every gate |
 | Diff is docs, spec, or plan only | Run `hygiene` only |
-| `packages/engine/test/fixtures/tripo-broken.3mf` absent | The e2e FAILS. Do not set `MESH_REPAIR_SKIP_E2E=1` to hide it — restore the fixture, or state plainly in the PR that the e2e did not run |
+| `packages/engine/test/fixtures/tripo-broken.3mf` absent | The e2e FAILS. Do not set `SLICEREADY_SKIP_E2E=1` to hide it — restore the fixture, or state plainly in the PR that the e2e did not run |
 | `gga` is not installed | Report `gga: skipped (not installed)`. Do not silently omit it |
 
 ## Execution Steps

@@ -110,25 +110,25 @@ run "unit tests" npm test
 
 # 5. Typecheck + bundle. Vitest never type-checks; this is the only check on
 #    main.ts and viewer.ts, which cannot be unit-tested (they build a WebGLRenderer).
-run "typecheck + build" npm run build -w @mesh-repair/web
+run "typecheck + build" npm run build -w @sliceready/web
 
 # 6. End to end, cold cache, against the production build. The only exercise the
 #    wiring in main.ts and viewer.ts ever gets.
 #
 #    Two specs run: smoke.e2e.ts builds a 10-triangle holed cube in memory and
 #    always runs; repair.e2e.ts needs the 30 MB gitignored Tripo fixture and
-#    fails loudly without it. MESH_REPAIR_SKIP_E2E=1 opts out of the big one —
+#    fails loudly without it. SLICEREADY_SKIP_E2E=1 opts out of the big one —
 #    that is what CI sets, because the browser measures the wiring and the
 #    triangle count only measures performance.
 rm -rf apps/web/node_modules/.vite
 if [ "${SKIP_E2E:-0}" = "1" ]; then
   record "e2e (cold, prod)" "SKIP" "SKIP_E2E=1 — say so in the PR"
-elif [ "${MESH_REPAIR_SKIP_E2E:-0}" = "1" ]; then
-  run "e2e (smoke only)" npm run test:e2e -w @mesh-repair/web
+elif [ "${SLICEREADY_SKIP_E2E:-0}" = "1" ]; then
+  run "e2e (smoke only)" npm run test:e2e -w @sliceready/web
 elif [ ! -f packages/engine/test/fixtures/tripo-broken.3mf ]; then
-  record "e2e (cold, prod)" "FAIL" "Tripo fixture missing. Restore it, or set MESH_REPAIR_SKIP_E2E=1 to run the smoke spec alone and say so in the PR"
+  record "e2e (cold, prod)" "FAIL" "Tripo fixture missing. Restore it, or set SLICEREADY_SKIP_E2E=1 to run the smoke spec alone and say so in the PR"
 else
-  run "e2e (cold, prod)" npm run test:e2e -w @mesh-repair/web
+  run "e2e (cold, prod)" npm run test:e2e -w @sliceready/web
 fi
 
 # 7. The review contract in AGENTS.md.
