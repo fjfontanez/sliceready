@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { toBufferGeometry, toLineGeometry } from './geometry';
+import { MESH_MATERIAL_PARAMS, toBufferGeometry, toLineGeometry } from './geometry';
 import type { DefectEdges, MeshBuffers } from './repair-client';
 
 const OPEN_EDGE_COLOR = 0xff2d2d;
@@ -29,9 +29,9 @@ export function createViewer(host: HTMLElement): Viewer {
   scene.add(group);
 
   // flatShading is load-bearing, not cosmetic: the geometry built in toBufferGeometry
-  // carries no normal attribute (see geometry.ts). Without flatShading, three.js reads
-  // the missing normal attribute and MeshStandardMaterial renders unlit.
-  const material = new THREE.MeshStandardMaterial({ color: 0x9bb7d4, flatShading: true });
+  // carries no normal attribute. See MESH_MATERIAL_PARAMS in geometry.ts for the
+  // invariant and the test that pins it.
+  const material = new THREE.MeshStandardMaterial(MESH_MATERIAL_PARAMS);
   let beforeMesh: THREE.Mesh | undefined;
   let afterMesh: THREE.Mesh | undefined;
   let overlay: THREE.Group | undefined;
