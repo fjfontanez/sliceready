@@ -83,7 +83,11 @@ export function createViewer(host: HTMLElement): Viewer {
 
       // Frame the model: 14 mm of a 200 mm frog is not a useful default view.
       const box = new THREE.Box3().setFromObject(beforeMesh);
-      const size = box.getSize(new THREE.Vector3()).length();
+      // A mesh with coincident vertices has a zero-length diagonal, which would
+      // derive near=0/far=0 — an invalid frustum that renders a blank viewer
+      // with no error. Clamp so the frustum is always valid; such a mesh fails
+      // report.pass anyway, but it is still drawn because download is offered.
+      const size = Math.max(box.getSize(new THREE.Vector3()).length(), 1e-3);
       const center = box.getCenter(new THREE.Vector3());
       controls.target.copy(center);
       camera.position.copy(center).add(new THREE.Vector3(0, 0, size * 1.5));
