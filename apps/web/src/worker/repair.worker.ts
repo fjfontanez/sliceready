@@ -1,5 +1,5 @@
-import { repairMesh, configureAdmesh } from '@mesh-repair/engine';
-import wasmUrl from '@mesh-repair/engine/wasm/admesh.wasm?url';
+import { repairMesh, configureAdmesh } from '@sliceready/engine';
+import wasmUrl from '@sliceready/engine/wasm/admesh.wasm?url';
 import type { MeshKind } from '../dropzone';
 
 // Emscripten's loader resolves admesh.wasm from import.meta.url, which the

@@ -1,4 +1,4 @@
-declare module '@mesh-repair/engine' {
+declare module '@sliceready/engine' {
   export interface MeshBuffers { vertProperties: Float32Array; triVerts: Uint32Array }
   export function configureAdmesh(options: { locateFile: (path: string) => string }): void;
   export function repairMesh(
@@ -10,7 +10,7 @@ declare module '@mesh-repair/engine' {
     },
   ): Promise<{ stl: Uint8Array; report: unknown; beforeMesh: MeshBuffers; afterMesh: MeshBuffers }>;
 }
-declare module '@mesh-repair/engine/wasm/admesh.wasm?url' {
+declare module '@sliceready/engine/wasm/admesh.wasm?url' {
   const url: string;
   export default url;
 }
