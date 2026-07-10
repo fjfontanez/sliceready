@@ -29,7 +29,7 @@
 
 The engine has 5 source modules, a WASM build, and passing tests. It is production code wearing the name "spike". This task moves it and nothing else — no behavior changes.
 
-The `manifold-3d` experiment (`src/repair.mjs`, `test/repair.test.mjs`) is **deleted**, not moved. It is a recorded negative result: `spike/FINDINGS.md` holds the verdict and git history holds the code. Carrying it forward would drag the `manifold-3d` dependency — a library we proved is not a repair tool — into the production engine's dependency tree.
+The `manifold-3d` experiment (`src/repair.mjs`, `test/repair.test.mjs`) is **deleted**, not moved. It is a recorded negative result: `spike/FINDINGS.md` holds the verdict and git history holds the code. Carrying it forward would drag the `manifold-3d` dependency — a library we proved is not a repair tool — into the production engine's dependency tree. `spike/run.mjs` is the manifold-3d spike harness — it imports `repairWithManifold` from `src/repair.mjs` — so it is deleted along with it; `run-admesh.mjs` has no such import and is the one that moves.
 
 **Files:**
 - Create: `package.json` (root)
@@ -38,8 +38,8 @@ The `manifold-3d` experiment (`src/repair.mjs`, `test/repair.test.mjs`) is **del
 - Move: `spike/wasm/` → `packages/engine/wasm/`
 - Move: `spike/test/{mesh3mf,check,repair-admesh,engine}.test.mjs` → `packages/engine/test/`
 - Move: `spike/test/fixtures/` → `packages/engine/test/fixtures/`
-- Move: `spike/run.mjs`, `spike/run-admesh.mjs` → `packages/engine/scripts/`
-- Delete: `spike/src/repair.mjs`, `spike/test/repair.test.mjs`, `spike/package.json`, `spike/package-lock.json`
+- Move: `spike/run-admesh.mjs` → `packages/engine/scripts/`
+- Delete: `spike/src/repair.mjs`, `spike/test/repair.test.mjs`, `spike/run.mjs`, `spike/package.json`, `spike/package-lock.json` (note: Step 1 deletes the first two through their post-move paths under `packages/engine/`, because `git mv` relocates them first)
 - Keep in place: `spike/FINDINGS.md`
 
 **Interfaces:**
@@ -53,15 +53,16 @@ mkdir -p packages/engine/scripts
 git mv spike/src packages/engine/src
 git mv spike/wasm packages/engine/wasm
 git mv spike/test packages/engine/test
-git mv spike/run.mjs packages/engine/scripts/run.mjs
 git mv spike/run-admesh.mjs packages/engine/scripts/run-admesh.mjs
-git rm -q packages/engine/src/repair.mjs packages/engine/test/repair.test.mjs
-git rm -q spike/package.json spike/package-lock.json
+git rm -qf packages/engine/src/repair.mjs packages/engine/test/repair.test.mjs spike/run.mjs
+git rm -qf spike/package.json spike/package-lock.json
 ```
 
-- [ ] **Step 2: Repoint the moved dev scripts at their new relative depth**
+The `-f` is required, not decorative. After `git mv`, the moved files are staged as new paths with no blob at that path in `HEAD`, so a bare `git rm` refuses with `error: the following file has changes staged in the index` and **aborts the whole command** — leaving `spike/run.mjs` undeleted too.
 
-`scripts/run.mjs` and `scripts/run-admesh.mjs` previously sat at `spike/` and imported `./src/...`. From `packages/engine/scripts/` the sources are one level up.
+- [ ] **Step 2: Repoint the moved dev script at its new relative depth**
+
+`scripts/run-admesh.mjs` is the only script that moves — `run.mjs` was deleted with the manifold-3d spike in Step 1. It previously sat at `spike/` and imported `./src/...`. From `packages/engine/scripts/` the sources are one level up.
 
 Run: `rg -n "from '\./src/|from \"\./src/" packages/engine/scripts/`
 For every hit, change `'./src/X.mjs'` to `'../src/X.mjs'`.
@@ -74,6 +75,11 @@ For every hit, change `'test/fixtures/...'` to a path resolved from the script's
 import { fileURLToPath } from 'node:url';
 const fixture = fileURLToPath(new URL('../test/fixtures/tripo-broken.3mf', import.meta.url));
 ```
+
+Then verify no dangling reference to the deleted manifold-3d spike survived the move:
+
+Run: `rg -n "repair\.mjs|manifold-3d" packages/engine/`
+Expected: no output. Any hit is a dangling reference to the deleted manifold-3d spike.
 
 - [ ] **Step 3: Write the root workspace manifest**
 
@@ -109,7 +115,7 @@ Create `packages/engine/package.json`:
     "./wasm/admesh.wasm": "./wasm/admesh.wasm"
   },
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test"
   },
   "dependencies": {
     "fflate": "^0.8.3"
@@ -119,6 +125,8 @@ Create `packages/engine/package.json`:
 
 `manifold-3d` is deliberately absent. It was proven not to be a repair tool (see `spike/FINDINGS.md`).
 
+The test script passes **no path**. On Node 24, `node --test test/` treats `test/` as a module to load rather than a directory to walk, and fails with `MODULE_NOT_FOUND` before discovering anything. Bare `node --test` uses default discovery, which finds `test/*.test.mjs` correctly. (It works on Node 18, which is how this trap survives review.)
+
 - [ ] **Step 5: Install and run the engine tests unchanged**
 
 Run: `npm install && npm test`
@@ -127,7 +135,7 @@ Expected: PASS. Every test in `packages/engine/test/` passes. `repair.test.mjs` 
 - [ ] **Step 6: Verify the WASM build script still resolves its paths**
 
 Run: `rg -n "spike" packages/engine/wasm/build.sh packages/engine/scripts/ docs/`
-Expected: no hits in `packages/engine/`. Any hit in `docs/` is prose and may stay. Fix any hit under `packages/engine/` by rewriting the path.
+Expected: the only hits under `packages/engine/` are comments naming `spike/FINDINGS.md`, which genuinely stays at `spike/` — leave those alone. Any hit that is part of a **path the runtime or the build resolves** (an `import` specifier, a `cd`, a file argument in `build.sh`) is a real break; rewrite it. Hits in `docs/` are prose and may stay.
 
 - [ ] **Step 7: Commit**
 
@@ -148,7 +156,7 @@ git commit -m "refactor(engine): promote spike to packages/engine npm workspace"
 
 **Interfaces:**
 - Consumes: `analyzeManifold(mesh, { tolerance })` from Task 1.
-- Produces: `analyzeManifold(mesh, { tolerance, collectDefectEdges = false })`. When `collectDefectEdges` is `true`, the returned object additionally carries `defectEdges: { open: Float32Array, flipped: Float32Array }` — each a flat `[x,y,z, x,y,z, ...]` array of vertex **pairs** (6 floats per edge), the layout `THREE.LineSegments` consumes directly. When `false`, `defectEdges` is `undefined`.
+- Produces: `analyzeManifold(mesh, { tolerance, collectDefectEdges = false, maxDefectEdges = 100_000 })`. When `collectDefectEdges` is `true`, the returned object additionally carries `defectEdges: { open: Float32Array, flipped: Float32Array, truncated: boolean }` — `open`/`flipped` are each a flat `[x,y,z, x,y,z, ...]` array of vertex **pairs** (6 floats per edge), the layout `THREE.LineSegments` consumes directly. `maxDefectEdges` caps how many edges of each kind are collected — a hard cap so the opt-in cannot blow up memory on a catastrophically damaged mesh; `openEdges`/`flippedEdges` still report the true totals regardless of the cap. `truncated` is `true` when the true total for either kind exceeds what was collected. When `collectDefectEdges` is `false`, `defectEdges` is `undefined`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -204,6 +212,17 @@ test('analyzeManifold collects the open-edge segments when asked', () => {
     assert.ok(Math.abs(r.defectEdges.open[i] - 10.41) < 1e-3, `endpoint ${i} is not on the hole rim`);
   }
 });
+
+test('analyzeManifold caps the collected defect edges and says so', () => {
+  const r = analyzeManifold(unsharedMesh(HOLED_CUBE_V, HOLED_CUBE_F), {
+    tolerance: 1e-4,
+    collectDefectEdges: true,
+    maxDefectEdges: 2,
+  });
+  assert.equal(r.openEdges, 4, 'the count is the true total, not the collected total');
+  assert.equal(r.defectEdges.open.length, 12, 'only 2 edges collected * 6 floats');
+  assert.equal(r.defectEdges.truncated, true);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -216,7 +235,7 @@ Expected: FAIL — the first new test may pass incidentally (`defectEdges` is al
 In `packages/engine/src/check.mjs`, change the signature:
 
 ```js
-export function analyzeManifold(mesh, { tolerance = 1e-4, collectDefectEdges = false } = {}) {
+export function analyzeManifold(mesh, { tolerance = 1e-4, collectDefectEdges = false, maxDefectEdges = 100_000 } = {}) {
 ```
 
 Replace the classification loop (currently `check.mjs:101-112`) with:
@@ -234,11 +253,11 @@ Replace the classification loop (currently `check.mjs:101-112`) with:
     const f = forward.get(key) || 0;
     const b = backward.get(key) || 0;
     const total = f + b;
-    if (total === 1) { openEdges++; if (collectDefectEdges) openKeys.push(key); }
+    if (total === 1) { openEdges++; if (collectDefectEdges && openKeys.length < maxDefectEdges) openKeys.push(key); }
     else if (total > 2) complexEdges++;
     else if (total === 2 && (f === 2 || b === 2)) { // both uses same direction = orientation defect
       flippedEdges++;
-      if (collectDefectEdges) flippedKeys.push(key);
+      if (collectDefectEdges && flippedKeys.length < maxDefectEdges) flippedKeys.push(key);
     }
   }
 
@@ -264,7 +283,13 @@ Then extend the return object (currently `check.mjs:114-123`) with one property,
 ```js
     signedVolume,
     defectEdges: collectDefectEdges
-      ? { open: toSegments(openKeys), flipped: toSegments(flippedKeys) }
+      ? {
+          open: toSegments(openKeys),
+          flipped: toSegments(flippedKeys),
+          // The overlay is a visual cue, not an inventory. Past the cap we stop
+          // collecting; openEdges/flippedEdges still report the true totals.
+          truncated: openEdges > openKeys.length || flippedEdges > flippedKeys.length,
+        }
       : undefined,
   };
 ```
@@ -307,10 +332,10 @@ Three changes to `engine.mjs`, all additive, all needed by the worker and viewer
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `packages/engine/test/engine.test.mjs` (the file already defines `V`, `F`, and `buf`; reuse them):
+Append to `packages/engine/test/engine.test.mjs`. The file already imports `repairMesh` (line 3) and `buildBinaryStl` (line 4), and defines `V`, `F`, and `buf` at module scope. Reuse all of them — re-importing an already-bound name is a `SyntaxError`, not a warning. Append ONLY the import shown below.
 
 ```js
-import { repairMesh, buildWarnings, COMPLEX_BASELINE } from '../src/engine.mjs';
+import { buildWarnings, COMPLEX_BASELINE } from '../src/engine.mjs';
 
 test('buildWarnings is silent at or below the slicer-validated baseline', () => {
   assert.deepEqual(buildWarnings({ complexEdges: COMPLEX_BASELINE }, COMPLEX_BASELINE), []);
@@ -361,7 +386,7 @@ test('repairMesh passes defect edges through when asked', async () => {
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -w @mesh-repair/engine`
-Expected: FAIL with `The requested module '../src/engine.mjs' does not provide an export named 'buildWarnings'`.
+Expected: FAIL with `The requested module '../src/engine.mjs' does not provide an export named 'buildWarnings'`. If you instead see `SyntaxError: Identifier 'repairMesh' has already been declared`, you re-imported a name the file already binds — remove it from your import line.
 
 - [ ] **Step 3: Rewrite `engine.mjs`**
 
@@ -439,8 +464,10 @@ Expected: PASS, including the pre-existing `repairMesh repairs a holed STL and r
 
 - [ ] **Step 5: Verify no `console.warn` survives in the engine**
 
-Run: `rg -n "console\.(warn|log)" packages/engine/src/`
+Run: `rg -n "^\s*console\.(warn|log)" packages/engine/src/`
 Expected: no output.
+
+The `^\s*` anchor matters: `engine.mjs` now carries a comment explaining why a `console.warn` would be wrong here, and an unanchored search matches its own prose.
 
 - [ ] **Step 6: Commit**
 
@@ -469,12 +496,20 @@ This is not covered by the design spec — it surfaced while reading the code. T
 
 Append to `packages/engine/test/repair-admesh.test.mjs`:
 
+The file already imports `repairWithAdmesh` and `AdmeshEngineError` (line 3), and defines `CUBE_V`, `HOLED_CUBE_F`, and `toBuffer` at module scope. Reuse all of them — re-importing an already-bound name is a `SyntaxError`, not a warning. Append ONLY the import shown below. Verify the names first with `rg -n "^import|CUBE_V|HOLED_CUBE_F|toBuffer" packages/engine/test/repair-admesh.test.mjs`.
+
 ```js
-import { configureAdmesh, AdmeshEngineError } from '../src/repair-admesh.mjs';
+import { configureAdmesh } from '../src/repair-admesh.mjs';
 
 test('configureAdmesh throws once the module is already instantiated', async () => {
-  // Any earlier test in this file has already forced instantiation via
-  // repairWithAdmesh; the module instance is cached module-wide by design.
+  // Force instantiation here rather than relying on an earlier test in this
+  // file having run first: the cached module is process-wide state, and a test
+  // whose truth depends on declaration order proves nothing when run alone.
+  // The fixture is BUILT by this file's own toBuffer helper — there is no
+  // pre-made mesh object to reference. 10 triangles / 584 bytes, clearing
+  // ADMesh's 4-triangle / 284-byte floor.
+  await repairWithAdmesh(toBuffer(CUBE_V, HOLED_CUBE_F));
+
   assert.throws(
     () => configureAdmesh({ locateFile: () => '/nope.wasm' }),
     AdmeshEngineError,
@@ -482,12 +517,10 @@ test('configureAdmesh throws once the module is already instantiated', async () 
 });
 ```
 
-This test must be the **last** test in the file: it asserts on the module-level cached instance, which earlier tests populate.
-
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npm test -w @mesh-repair/engine`
-Expected: FAIL with `does not provide an export named 'configureAdmesh'`.
+Expected: FAIL with `does not provide an export named 'configureAdmesh'`. If you instead see `SyntaxError: Identifier 'repairWithAdmesh' has already been declared` (or `'AdmeshEngineError'`), you re-imported a name the file already binds — remove it from your import line.
 
 - [ ] **Step 3: Implement**
 
@@ -570,6 +603,7 @@ Create `apps/web/package.json`:
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@types/three": "^0.169.0",
     "happy-dom": "^15.11.0",
     "typescript": "^5.6.0",
     "vite": "^5.4.0",
@@ -577,6 +611,8 @@ Create `apps/web/package.json`:
   }
 }
 ```
+
+`three` ships no `.d.ts` files of its own — `@types/three` is a separate package, and without it `tsc --noEmit` fails with `TS7016` on `geometry.ts` and `viewer.ts`. Vitest would still pass, because esbuild strips types without checking them.
 
 Create `apps/web/tsconfig.json`:
 
@@ -600,7 +636,10 @@ Create `apps/web/tsconfig.json`:
 Create `apps/web/vite.config.ts`:
 
 ```ts
-import { defineConfig } from 'vite';
+// From 'vitest/config', not 'vite': the `test` key below is Vitest's config
+// surface. Vite's own defineConfig does not type it, and apps/web/tsconfig.json
+// does not include this file, so the mistake would never surface as a build error.
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // The engine is plain .mjs in a workspace package; Vite must not try to
@@ -720,10 +759,25 @@ Expected: PASS, 2 tests.
 Run: `npm run build -w @mesh-repair/web`
 Expected: exit 0, a `dist/` directory is produced.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Ignore the build output before it gets committed**
+
+Step 6 just created `dist/`. Step 8's `git add apps/web` would commit it, and every later build rewrites its content-hashed filenames — the repo would accumulate churn forever.
+
+Append to the root `.gitignore`:
+
+```gitignore
+# Build and test output
+dist/
+test-results/
+playwright-report/
+```
+
+Verify: `git status --short apps/web` shows no `dist/` entries.
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web package.json package-lock.json
+git add .gitignore apps/web package.json package-lock.json
 git commit -m "feat(web): Vite + TypeScript scaffold with promo shell"
 ```
 
@@ -875,6 +929,8 @@ The `repair` phase is one opaque WASM call. No heartbeat is possible inside it. 
 **Files:**
 - Create: `apps/web/src/repair-client.ts`
 - Create: `apps/web/src/worker/repair.worker.ts`
+- Create: `apps/web/src/engine.d.ts`
+- Modify: `packages/engine/src/engine.mjs` (re-export `configureAdmesh`; Task 3 already rewrote this file)
 - Test: `apps/web/test/repair-client.test.ts`
 
 **Interfaces:**
@@ -884,9 +940,21 @@ The `repair` phase is one opaque WASM call. No heartbeat is possible inside it. 
   - `PHASES: readonly Phase[]`
   - `class RepairTimeoutError extends Error { readonly phase: Phase }`
   - `class RepairFailedError extends Error {}`
+  - `class EngineLoadError extends Error {}` — thrown when the worker's `error` event fires: the worker script or its `.wasm` asset failed to fetch or instantiate. Distinct from `RepairFailedError`, which means the engine ran and rejected the mesh.
   - `estimateTriangles(sizeBytes: number, kind: MeshKind): number`
   - `phaseBudgetMs(phase: Phase, triangles: number): number`
-  - `interface WorkerLike { postMessage(msg: unknown, transfer?: Transferable[]): void; terminate(): void; onmessage: ((ev: { data: unknown }) => void) | null; onerror: ((ev: unknown) => void) | null; }`
+  - ```ts
+    // Typed against the real DOM Worker's exact event types. Under
+    // strictFunctionTypes handler parameters are checked CONTRAVARIANTLY: widening
+    // `ev` to `ErrorEvent | Event` makes a real Worker UNassignable, because its own
+    // handler only accepts `ErrorEvent`. Narrower here, not wider.
+    export interface WorkerLike {
+      postMessage(msg: unknown, transfer?: Transferable[]): void;
+      terminate(): void;
+      onmessage: ((ev: MessageEvent) => void) | null;
+      onerror: ((ev: ErrorEvent) => void) | null;
+    }
+    ```
   - `interface RepairResult { stl: Uint8Array; report: Report; beforeMesh: MeshBuffers; afterMesh: MeshBuffers }`
   - `repairInWorker(worker: WorkerLike, bytes: ArrayBuffer, kind: MeshKind, opts?: { onPhase?: (phase: Phase) => void }): Promise<RepairResult>`
   - `createRepairWorker(): Worker` — the real one, wired to `repair.worker.ts`.
@@ -903,18 +971,20 @@ import {
   estimateTriangles,
   RepairTimeoutError,
   RepairFailedError,
+  EngineLoadError,
   PHASES,
   type WorkerLike,
 } from '../src/repair-client';
 
 class FakeWorker implements WorkerLike {
-  onmessage: ((ev: { data: unknown }) => void) | null = null;
-  onerror: ((ev: unknown) => void) | null = null;
+  onmessage: ((ev: MessageEvent) => void) | null = null;
+  onerror: ((ev: ErrorEvent) => void) | null = null;
   posted: unknown[] = [];
   terminated = 0;
   postMessage(msg: unknown): void { this.posted.push(msg); }
   terminate(): void { this.terminated++; }
-  emit(data: unknown): void { this.onmessage?.({ data }); }
+  emit(data: unknown): void { this.onmessage?.({ data } as MessageEvent); }
+  crash(): void { this.onerror?.(new ErrorEvent('error')); }
 }
 
 const DONE = {
@@ -928,6 +998,20 @@ const DONE = {
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
+// `arm()`'s setTimeout rejects this promise while fake timers advance, one
+// microtask before `expect(...).rejects` can attach its handler. Node's
+// unhandled-rejection tracker fires in that window and vitest exits 1 even
+// though every assertion passes. An inert handler attached at creation closes
+// the window without changing what the promise settles to.
+const started = <T>(promise: Promise<T>): Promise<T> => {
+  promise.catch(() => {});
+  return promise;
+};
+
+// Stated limitation: the timeout tests below compute their expected deadline by
+// calling phaseBudgetMs() themselves — a self-referential oracle. If the budget
+// formula were gutted to a constant, those tests would still pass; only the two
+// tests in THIS block would catch it. Keep them.
 describe('phaseBudgetMs', () => {
   it('grows with triangle count so a big mesh is not mistaken for a dead one', () => {
     expect(phaseBudgetMs('repair', 2_000_000)).toBeGreaterThan(phaseBudgetMs('repair', 10));
@@ -966,7 +1050,7 @@ describe('repairInWorker', () => {
 
   it('terminates the worker and reports the hung phase when a deadline expires', async () => {
     const worker = new FakeWorker();
-    const promise = repairInWorker(worker, new ArrayBuffer(884), 'stl');
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
 
     worker.emit({ type: 'progress', phase: 'parse', triangles: undefined });
     worker.emit({ type: 'progress', phase: 'analyze-before', triangles: 16 });
@@ -995,7 +1079,7 @@ describe('repairInWorker', () => {
 
   it('rejects and terminates when the worker reports an engine error', async () => {
     const worker = new FakeWorker();
-    const promise = repairInWorker(worker, new ArrayBuffer(884), 'stl');
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
     worker.emit({ type: 'error', message: 'mesh too small or malformed for ADMesh' });
 
     await expect(promise).rejects.toBeInstanceOf(RepairFailedError);
@@ -1003,9 +1087,18 @@ describe('repairInWorker', () => {
     expect(worker.terminated).toBe(1);
   });
 
+  it('reports an engine load failure when the worker fires an error event', async () => {
+    const worker = new FakeWorker();
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
+    worker.crash();
+
+    await expect(promise).rejects.toBeInstanceOf(EngineLoadError);
+    expect(worker.terminated).toBe(1);
+  });
+
   it('ignores messages that arrive after it has settled', async () => {
     const worker = new FakeWorker();
-    const promise = repairInWorker(worker, new ArrayBuffer(884), 'stl');
+    const promise = started(repairInWorker(worker, new ArrayBuffer(884), 'stl'));
     worker.emit({ type: 'error', message: 'boom' });
     await expect(promise).rejects.toBeInstanceOf(RepairFailedError);
 
@@ -1050,6 +1143,7 @@ export interface MeshBuffers {
 export interface DefectEdges {
   open: Float32Array;
   flipped: Float32Array;
+  truncated: boolean;
 }
 
 export interface ManifoldReport {
@@ -1078,11 +1172,15 @@ export interface RepairResult {
   afterMesh: MeshBuffers;
 }
 
+// Typed against the real DOM Worker's exact event types. Under
+// strictFunctionTypes handler parameters are checked CONTRAVARIANTLY: widening
+// `ev` to `ErrorEvent | Event` makes a real Worker UNassignable, because its own
+// handler only accepts `ErrorEvent`. Narrower here, not wider.
 export interface WorkerLike {
   postMessage(msg: unknown, transfer?: Transferable[]): void;
   terminate(): void;
-  onmessage: ((ev: { data: unknown }) => void) | null;
-  onerror: ((ev: unknown) => void) | null;
+  onmessage: ((ev: MessageEvent) => void) | null;
+  onerror: ((ev: ErrorEvent) => void) | null;
 }
 
 export class RepairTimeoutError extends Error {
@@ -1096,6 +1194,16 @@ export class RepairFailedError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'RepairFailedError';
+  }
+}
+
+// A Worker `error` event is how a module/WASM load failure surfaces: the
+// worker script or its .wasm asset failed to fetch or instantiate. It is a
+// distinct user-facing state from "the engine ran and rejected this mesh".
+export class EngineLoadError extends Error {
+  constructor(message = 'the repair engine failed to load') {
+    super(message);
+    this.name = 'EngineLoadError';
   }
 }
 
@@ -1164,7 +1272,7 @@ export function repairInWorker(
       timer = setTimeout(() => fail(new RepairTimeoutError(phase)), phaseBudgetMs(phase, triangles));
     };
 
-    worker.onerror = () => fail(new RepairFailedError('the repair worker crashed'));
+    worker.onerror = () => fail(new EngineLoadError());
 
     worker.onmessage = ({ data }): void => {
       if (settled) return;
@@ -1203,7 +1311,7 @@ export function createRepairWorker(): Worker {
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `npm test -w @mesh-repair/web`
-Expected: PASS, all 8 `repair-client` tests.
+Expected: PASS, all 11 `repair-client` tests (2 in `phaseBudgetMs`, 2 in `estimateTriangles`, 7 in `repairInWorker`).
 
 - [ ] **Step 5: Implement the real worker**
 
@@ -1223,6 +1331,9 @@ self.onmessage = async (event: MessageEvent<{ bytes: ArrayBuffer; kind: MeshKind
   const { bytes, kind } = event.data;
   try {
     const { stl, report, beforeMesh, afterMesh } = await repairMesh(new Uint8Array(bytes), kind, {
+      // Always on: the overlay is the app's entire visual proof that a repair
+      // happened. analyzeManifold caps the collected edge count internally, so
+      // a catastrophically damaged mesh cannot blow up memory here.
       collectDefectEdges: true,
       onProgress: (phase: string, info: { triangles?: number }) => {
         self.postMessage({ type: 'progress', phase, triangles: info?.triangles });
@@ -1270,12 +1381,17 @@ declare module '@mesh-repair/engine/wasm/admesh.wasm?url' {
 export { configureAdmesh, AdmeshEngineError } from './repair-admesh.mjs';
 ```
 
-- [ ] **Step 6: Verify the worker type-checks and the app builds**
+- [ ] **Step 6: Verify a real Worker satisfies WorkerLike**
 
 Run: `npm run build -w @mesh-repair/web`
-Expected: exit 0.
+Expected: exit 0. This is the check that matters: `createRepairWorker()` returns a real DOM `Worker` and hands it to `repairInWorker(worker: WorkerLike, ...)`. Under `strictFunctionTypes`, handler parameters are contravariant, so `WorkerLike`'s handler parameter types must be exactly as narrow as the DOM's — `MessageEvent` and `ErrorEvent`. Typing `onmessage` as `(ev: { data: unknown }) => void`, or `onerror` as `(ev: ErrorEvent | Event) => void`, each produce `error TS2345: Argument of type 'Worker' is not assignable to parameter of type 'WorkerLike'`.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Verify the suite exits 0, not just "all green"**
+
+Run: `npm test -w @mesh-repair/web; echo "exit=$?"`
+Expected: `exit=0`. A passing assertion count is not a passing suite. The watchdog's timeout is delivered by a `setTimeout` callback firing inside `vi.advanceTimersByTimeAsync`, which rejects the promise one microtask before `expect(...).rejects` attaches its handler; Node's unhandled-rejection tracker fires in that window and vitest exits 1 with `Errors: 1 error` while reporting every test as passed. The `started()` helper closes that window. If you see a non-zero exit with all tests green, that is what happened.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add apps/web/src/repair-client.ts apps/web/src/worker apps/web/src/engine.d.ts apps/web/test/repair-client.test.ts packages/engine/src/engine.mjs
@@ -1422,7 +1538,16 @@ export function createViewer(host: HTMLElement): Viewer {
     for (const object of [...group.children]) {
       group.remove(object);
       object.traverse((node) => {
-        if (node instanceof THREE.Mesh || node instanceof THREE.LineSegments) node.geometry.dispose();
+        if (node instanceof THREE.Mesh || node instanceof THREE.LineSegments) {
+          node.geometry.dispose();
+          // The overlay builds a fresh LineBasicMaterial per show(); disposing
+          // only geometry abandons one material per defect layer per file drop.
+          // The shared mesh `material` is disposed once, in dispose().
+          if (node.material !== material) {
+            const materials = Array.isArray(node.material) ? node.material : [node.material];
+            for (const m of materials) m.dispose();
+          }
+        }
       });
     }
     beforeMesh = afterMesh = overlay = undefined;
@@ -1473,6 +1598,7 @@ export function createViewer(host: HTMLElement): Viewer {
     dispose() {
       renderer.setAnimationLoop(null);
       clear();
+      material.dispose();
       controls.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -1508,7 +1634,7 @@ The rule from the spec, enforced in code: when `report.pass` is `false`, no stri
 **Interfaces:**
 - Consumes: `Report` from Task 7.
 - Produces:
-  - `summarize(report: Report): { ok: boolean; headline: string; fixed: string[]; remaining: string[]; warnings: string[] }`
+  - `summarize(report: Report): { ok: boolean; headline: string; fixed: string[]; remaining: string[]; warnings: string[]; notes: string[] }`
   - `repairedFileName(originalName: string): string`
   - `downloadStl(stl: Uint8Array, fileName: string): void`
 
@@ -1565,6 +1691,14 @@ describe('summarize', () => {
     };
     expect(summarize(report).warnings).toEqual(report.warnings);
   });
+
+  it('says so when the defect overlay is truncated', () => {
+    const report: Report = {
+      before: { ...counts({ openEdges: 500_000 }), defectEdges: { open: new Float32Array(), flipped: new Float32Array(), truncated: true } },
+      after: counts(), pass: true, warnings: [],
+    };
+    expect(summarize(report).notes[0]).toMatch(/partial view/i);
+  });
 });
 ```
 
@@ -1604,6 +1738,7 @@ export interface Summary {
   fixed: string[];
   remaining: string[];
   warnings: string[];
+  notes: string[];
 }
 
 const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
@@ -1626,12 +1761,21 @@ export function summarize(report: Report): Summary {
   if (after.openEdges > 0) remaining.push(`${plural(after.openEdges, 'open edge')} could not be closed.`);
   if (after.flippedEdges > 0) remaining.push(`${plural(after.flippedEdges, 'flipped edge')} could not be corrected.`);
 
+  // The overlay is capped (see analyzeManifold's maxDefectEdges). Saying so is
+  // the same honesty rule the headline obeys: never let the UI imply it showed
+  // everything when it did not.
+  const notes: string[] = [];
+  if (before.defectEdges?.truncated) {
+    notes.push('The highlighted defects are a partial view — this mesh has more damage than the viewer draws.');
+  }
+
   return {
     ok: pass,
     headline: pass ? 'Mesh repaired — it should slice now.' : 'Partially fixed — this mesh is still not watertight.',
     fixed,
     remaining,
     warnings,
+    notes,
   };
 }
 ```
@@ -1646,7 +1790,12 @@ export function repairedFileName(originalName: string): string {
 }
 
 export function downloadStl(stl: Uint8Array, fileName: string): void {
-  const url = URL.createObjectURL(new Blob([stl], { type: 'model/stl' }));
+  // TypeScript 5.9 narrowed BlobPart to ArrayBufferView<ArrayBuffer>, and a bare
+  // Uint8Array infers as Uint8Array<ArrayBufferLike> — which admits
+  // SharedArrayBuffer and so no longer satisfies it. We never create one (no
+  // threads, no SharedArrayBuffer, no COOP/COEP), so the cast is sound. Casting
+  // beats `stl.slice()`, which would copy a buffer that can be ~94 MB.
+  const url = URL.createObjectURL(new Blob([stl as BlobPart], { type: 'model/stl' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
@@ -1664,7 +1813,14 @@ export function downloadStl(stl: Uint8Array, fileName: string): void {
 Run: `npm test -w @mesh-repair/web`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Typecheck, because the tests do not**
+
+Run: `npm run build -w @mesh-repair/web`
+Expected: exit 0.
+
+Vitest transpiles TypeScript with esbuild, which strips types without checking them. A green test run says nothing about whether this file compiles. `downloadStl` is exactly where that gap bites — `new Blob([stl])` on a bare `Uint8Array` is a `TS2322` under TypeScript 5.9, and `npm test` would never tell you.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/report.ts apps/web/src/download.ts apps/web/test/report.test.ts apps/web/test/download.test.ts
@@ -1684,7 +1840,7 @@ The five states from the spec, plus the four error conditions. This is the only 
 - Test: `apps/web/test/state.test.ts`
 
 **Interfaces:**
-- Consumes: `detectKind`, `isOverSoftCap` (Task 6); `repairInWorker`, `createRepairWorker`, `RepairTimeoutError`, `RepairFailedError` (Task 7); `createViewer` (Task 8); `summarize`, `downloadStl`, `repairedFileName` (Task 9).
+- Consumes: `detectKind`, `isOverSoftCap` (Task 6); `repairInWorker`, `createRepairWorker`, `RepairTimeoutError`, `RepairFailedError`, `EngineLoadError` (Task 7); `createViewer` (Task 8); `summarize`, `downloadStl`, `repairedFileName` (Task 9).
 - Produces:
   - `type AppState = { kind: 'idle' } | { kind: 'reading' } | { kind: 'repairing'; phase: Phase } | { kind: 'done'; result: RepairResult; fileName: string } | { kind: 'error'; message: string }`
   - `errorMessageFor(error: unknown): string`
@@ -1697,7 +1853,7 @@ Create `apps/web/test/state.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { errorMessageFor, validateFile } from '../src/state';
-import { RepairTimeoutError, RepairFailedError } from '../src/repair-client';
+import { RepairTimeoutError, RepairFailedError, EngineLoadError } from '../src/repair-client';
 import { SOFT_CAP_BYTES } from '../src/dropzone';
 
 const fileOf = (name: string, size: number): File => {
@@ -1735,6 +1891,10 @@ describe('errorMessageFor', () => {
     expect(errorMessageFor(new RepairFailedError('mesh too small'))).toMatch(/mesh too small/);
   });
 
+  it('names the load failure when the engine never came up', () => {
+    expect(errorMessageFor(new EngineLoadError())).toMatch(/engine failed to load/i);
+  });
+
   it('falls back to a generic message for an unknown throw', () => {
     expect(errorMessageFor('boom')).toMatch(/something went wrong/i);
   });
@@ -1752,7 +1912,7 @@ Create `apps/web/src/state.ts`:
 
 ```ts
 import { detectKind, isOverSoftCap, type MeshKind } from './dropzone';
-import { RepairFailedError, RepairTimeoutError, type Phase, type RepairResult } from './repair-client';
+import { RepairFailedError, RepairTimeoutError, EngineLoadError, type Phase, type RepairResult } from './repair-client';
 
 export type AppState =
   | { kind: 'idle' }
@@ -1777,13 +1937,13 @@ export function validateFile(file: File): Validation {
 }
 
 export function errorMessageFor(error: unknown): string {
+  if (error instanceof EngineLoadError) {
+    return 'The repair engine failed to load. Check your connection and reload the page.';
+  }
   if (error instanceof RepairTimeoutError) {
     return 'The repair took too long and was stopped. This model may be too large or too complex for your browser.';
   }
   if (error instanceof RepairFailedError) return error.message;
-  if (error instanceof Error && /wasm|fetch|import/i.test(error.message)) {
-    return 'The repair engine failed to load. Check your connection and reload the page.';
-  }
   return 'Something went wrong. Try reloading the page.';
 }
 
@@ -1844,7 +2004,7 @@ function render(state: AppState): void {
   const summary = summarize(state.result.report);
   status.textContent = summary.headline;
 
-  for (const line of [...summary.fixed, ...summary.remaining, ...summary.warnings]) {
+  for (const line of [...summary.fixed, ...summary.remaining, ...summary.notes, ...summary.warnings]) {
     const p = document.createElement('p');
     p.textContent = line;
     actions.append(p);
@@ -1872,9 +2032,10 @@ async function handleFile(file: File): Promise<void> {
 
   render({ kind: 'reading' });
   const bytes = await file.arrayBuffer();
-  const worker = createRepairWorker();
+  let worker: Worker | undefined;
 
   try {
+    worker = createRepairWorker();
     const result: RepairResult = await repairInWorker(worker, bytes, validation.kind, {
       onPhase: (phase) => render({ kind: 'repairing', phase }),
     });
@@ -1887,7 +2048,8 @@ async function handleFile(file: File): Promise<void> {
     render({ kind: 'error', message: errorMessageFor(error) });
   } finally {
     // repairInWorker already terminates on failure; this covers the happy path.
-    worker.terminate();
+    // terminate() is a no-op on an already-terminated worker.
+    worker?.terminate();
   }
 }
 

@@ -31,9 +31,9 @@ download, and the SliceMargin CTA.
 
 ## 3. Repository structure
 
-The engine is no longer a spike. It is production code with a clean boundary and 17 passing
-tests. It gets promoted, and the boundary gets enforced by module resolution rather than by
-discipline.
+The engine is no longer a spike. It is production code with a clean boundary and 15 passing
+tests — the manifold-3d spike's 2 tests are deleted along with its code during the promotion.
+It gets promoted, and the boundary gets enforced by module resolution rather than by discipline.
 
 ```
 packages/engine/            # promoted from spike/
@@ -63,7 +63,7 @@ Worker bundling and `.wasm` asset resolution natively.
 
 ## 4. Engine changes
 
-Three additive changes. No existing behavior is modified; the 17 tests must keep passing.
+Four additive changes. No existing behavior is modified; the 15 tests must keep passing.
 
 ### 4.1 `check.mjs` — expose defect edges
 
@@ -71,7 +71,7 @@ Three additive changes. No existing behavior is modified; the 17 tests must keep
 discards the classification and returns only counters. Add an opt-in option:
 
 ```
-analyzeManifold(mesh, { tolerance, collectDefectEdges = false })
+analyzeManifold(mesh, { tolerance, collectDefectEdges = false, maxDefectEdges = 100_000 })
 ```
 
 When `collectDefectEdges` is `true`, the returned report additionally carries the endpoint
@@ -81,6 +81,10 @@ three.js `LineSegments` consumes directly.
 
 It is opt-in because a severely damaged multi-million-triangle mesh could materialize a large
 array. The app requests it; the engine's own tests do not.
+
+Collection is also capped at `maxDefectEdges` per defect class. When the cap bites, the returned
+`defectEdges.truncated` is `true`, and the UI must say the overlay is partial — the counters
+(`openEdges`, `flippedEdges`) always report the true totals regardless of the cap.
 
 ### 4.2 `engine.mjs` — progress callback and geometry passthrough
 
@@ -100,6 +104,19 @@ the user. It becomes `report.warnings: string[]`, and the UI renders it.
 `report.pass` remains driven solely by `openEdges === 0 && flippedEdges === 0 && triangles > 0
 && |signedVolume| > 0`. Exceeding the complex-edge baseline is a warning, never a failure.
 
+### 4.4 `repair-admesh.mjs` — let the caller locate the WASM binary
+
+`createAdmesh()` is called with no arguments, so Emscripten's generated loader resolves
+`admesh.wasm` relative to `import.meta.url`. A bundler rewrites that URL inside a Web Worker
+bundle, and the fetch 404s at runtime. Add `configureAdmesh({ locateFile })`, called by the
+worker before the first repair with the asset URL the bundler actually emitted. It throws if
+called after the module is instantiated, because the instance is cached and a late
+reconfiguration would be silently ignored.
+
+This change was not anticipated by the original design; it surfaced while reading the code.
+`configureAdmesh` and `AdmeshEngineError` are re-exported from `engine.mjs` so the app keeps a
+single entry point.
+
 ## 5. Worker protocol and watchdog
 
 ### 5.1 Protocol
@@ -110,7 +127,7 @@ the WASM module, runs `repairMesh`, and transfers the results back.
 | Direction | Message |
 |---|---|
 | main → worker | `{ type: 'repair', bytes: ArrayBuffer, kind: 'stl' \| '3mf' }` |
-| worker → main | `{ type: 'progress', phase }` — one per phase entered |
+| worker → main | `{ type: 'progress', phase, triangles? }` — one per phase entered; `triangles` is absent for `parse` and carries the parsed triangle count thereafter |
 | worker → main | `{ type: 'done', stl, report, beforeMesh, afterMesh }` |
 | worker → main | `{ type: 'error', message }` |
 
@@ -148,7 +165,8 @@ triangles) is invisible to the naked eye; without the overlay the toggle communi
 the numeric report carries the entire burden of persuasion.
 
 Camera fits the mesh bounding box. `OrbitControls` for inspection. Geometries are disposed when a
-new file is loaded.
+new file is loaded. Per-overlay materials are disposed with them; the shared mesh material is
+disposed once, when the viewer is torn down.
 
 ## 7. States and error handling
 
@@ -173,7 +191,7 @@ broken file while claiming success. This enforces product spec §5 in code rathe
 
 ## 8. Testing
 
-- **Engine:** the existing 17 Node tests keep passing unchanged. New tests cover
+- **Engine:** the existing 15 Node tests keep passing unchanged. New tests cover
   `collectDefectEdges` (a known-holed fixture yields the expected edge count) and `onProgress`
   (phases fire in order).
 - **Watchdog and state machine:** unit-tested on the main thread with fake timers and a fake
