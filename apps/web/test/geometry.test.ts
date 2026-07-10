@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBufferGeometry, toLineGeometry } from '../src/geometry';
+import { MESH_MATERIAL_PARAMS, toBufferGeometry, toLineGeometry } from '../src/geometry';
 
 describe('toBufferGeometry', () => {
   it('carries every vertex and every index across', () => {
@@ -19,6 +19,10 @@ describe('toBufferGeometry', () => {
       triVerts: new Uint32Array([0, 1, 2]),
     };
     expect(toBufferGeometry(mesh).getAttribute('normal')).toBeUndefined();
+  });
+
+  it('pins flatShading, which toBufferGeometry depends on for correct lighting', () => {
+    expect(MESH_MATERIAL_PARAMS.flatShading).toBe(true);
   });
 });
 

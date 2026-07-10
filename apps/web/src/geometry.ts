@@ -1,6 +1,15 @@
 import * as THREE from 'three';
 import type { MeshBuffers } from './repair-client';
 
+// The mesh material lives here, next to the geometry it must match. toBufferGeometry
+// emits no `normal` attribute, so flatShading is a correctness requirement, not a
+// style choice: MeshStandardMaterial without normals AND without flat shading renders
+// unlit. Pinned by a test, because viewer.ts needs a WebGL context and cannot be one.
+export const MESH_MATERIAL_PARAMS: THREE.MeshStandardMaterialParameters = {
+  color: 0x9bb7d4,
+  flatShading: true,
+};
+
 export function toBufferGeometry(mesh: MeshBuffers): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(mesh.vertProperties, 3));
