@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { errorMessageFor, validateFile } from '../src/state';
+import { downloadLabel, errorMessageFor, validateFile } from '../src/state';
 import { RepairTimeoutError, RepairFailedError, EngineLoadError } from '../src/repair-client';
 import { SOFT_CAP_BYTES } from '../src/dropzone';
 
@@ -44,5 +44,15 @@ describe('errorMessageFor', () => {
 
   it('falls back to a generic message for an unknown throw', () => {
     expect(errorMessageFor('boom')).toMatch(/something went wrong/i);
+  });
+});
+
+describe('downloadLabel', () => {
+  it('names the file repaired only when the repair passed', () => {
+    expect(downloadLabel(true)).toBe('Download repaired STL');
+  });
+
+  it('never says "repaired" when the repair did not pass', () => {
+    expect(downloadLabel(false).toLowerCase()).not.toContain('repaired');
   });
 });
