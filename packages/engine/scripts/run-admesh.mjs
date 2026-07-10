@@ -1,11 +1,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { parse3mf } from './src/mesh3mf.mjs';
-import { buildBinaryStl } from './src/stl.mjs';
-import { analyzeManifold, bboxDiagonal } from './src/check.mjs';
-import { repairWithAdmesh, AdmeshEngineError } from './src/repair-admesh.mjs';
+import { fileURLToPath } from 'node:url';
+import { parse3mf } from '../src/mesh3mf.mjs';
+import { buildBinaryStl } from '../src/stl.mjs';
+import { analyzeManifold, bboxDiagonal } from '../src/check.mjs';
+import { repairWithAdmesh, AdmeshEngineError } from '../src/repair-admesh.mjs';
 
-const inPath = process.argv[2] ?? 'test/fixtures/tripo-broken.3mf';
-const outPath = process.argv[3] ?? 'test/fixtures/tripo-admesh-repaired.stl';
+const defaultInPath = fileURLToPath(new URL('../test/fixtures/tripo-broken.3mf', import.meta.url));
+const defaultOutPath = fileURLToPath(new URL('../test/fixtures/tripo-admesh-repaired.stl', import.meta.url));
+const inPath = process.argv[2] ?? defaultInPath;
+const outPath = process.argv[3] ?? defaultOutPath;
 
 // Validated by spike/FINDINGS.md: the native `admesh --fill-holes
 // --normal-directions --normal-values` run left exactly 2 residual complex
