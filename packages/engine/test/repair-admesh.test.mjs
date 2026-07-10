@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { repairWithAdmesh, AdmeshEngineError } from '../src/repair-admesh.mjs';
+import { configureAdmesh } from '../src/repair-admesh.mjs';
 import { parseBinaryStl, buildBinaryStl } from '../src/stl.mjs';
 import { analyzeManifold } from '../src/check.mjs';
 
@@ -61,4 +62,19 @@ test('repairWithAdmesh closes the open edges of a holed cube', async () => {
   assert.equal(after.openEdges, 0, 'ADMesh should fill the hole');
   assert.equal(after.flippedEdges, 0);
   assert.ok(Math.abs(after.signedVolume) > 0);
+});
+
+test('configureAdmesh throws once the module is already instantiated', async () => {
+  // Force instantiation here rather than relying on an earlier test in this
+  // file having run first: the cached module is process-wide state, and a test
+  // whose truth depends on declaration order proves nothing when run alone.
+  // The fixture is BUILT by this file's own toBuffer helper — there is no
+  // pre-made mesh object to reference. 10 triangles / 584 bytes, clearing
+  // ADMesh's 4-triangle / 284-byte floor.
+  await repairWithAdmesh(toBuffer(CUBE_V, HOLED_CUBE_F));
+
+  assert.throws(
+    () => configureAdmesh({ locateFile: () => '/nope.wasm' }),
+    AdmeshEngineError,
+  );
 });
