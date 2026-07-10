@@ -22,7 +22,7 @@ jobs:
       # app, the real Worker and the real WASM module in a real Chromium, using
       # a 10-triangle mesh it builds in memory. The browser is what catches the
       # wiring bugs; the triangle count only measures speed.
-      MESH_REPAIR_SKIP_E2E: '1'
+      SLICEREADY_SKIP_E2E: '1'
       # gga is an AI reviewer. It runs on a human's machine before opening a PR,
       # not on every push.
       SKIP_GGA: '1'
