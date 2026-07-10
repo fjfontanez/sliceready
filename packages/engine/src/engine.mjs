@@ -58,3 +58,5 @@ export async function repairMesh(fileBytes, kind, { onProgress = () => {}, colle
     afterMesh: mesh,
   };
 }
+
+export { configureAdmesh, AdmeshEngineError } from './repair-admesh.mjs';
