@@ -1,5 +1,5 @@
 {
-  "name": "mesh-repair",
+  "name": "sliceready",
   "private": true,
   "type": "module",
   "workspaces": ["packages/*", "apps/*"],

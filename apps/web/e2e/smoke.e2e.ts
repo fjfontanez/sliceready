@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 // @ts-expect-error — the engine is untyped ESM; this subpath is a declared export.
-import { buildBinaryStl } from '@mesh-repair/engine/stl';
+import { buildBinaryStl } from '@sliceready/engine/stl';
 
 // A cube missing its top face: 10 triangles, one square hole, 4 open edges.
 // 584 bytes, which clears ADMesh's hard 284-byte / 4-triangle floor. Fractional

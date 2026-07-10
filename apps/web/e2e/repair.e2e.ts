@@ -7,11 +7,11 @@ const FIXTURE = fileURLToPath(new URL('../../../packages/engine/test/fixtures/tr
 // The fixture is ~32 MB and gitignored, so this suite cannot run in CI. It must
 // FAIL rather than skip when the fixture is absent: a silent skip reported as a
 // green run is how a broken pipeline gets mistaken for a working one. CI opts
-// out explicitly with MESH_REPAIR_SKIP_E2E=1.
+// out explicitly with SLICEREADY_SKIP_E2E=1.
 test.beforeAll(() => {
-  if (process.env.MESH_REPAIR_SKIP_E2E === '1') test.skip(true, 'explicitly opted out via MESH_REPAIR_SKIP_E2E');
+  if (process.env.SLICEREADY_SKIP_E2E === '1') test.skip(true, 'explicitly opted out via SLICEREADY_SKIP_E2E');
   if (!existsSync(FIXTURE)) {
-    throw new Error(`e2e fixture missing: ${FIXTURE}. Restore it, or set MESH_REPAIR_SKIP_E2E=1 to opt out on purpose.`);
+    throw new Error(`e2e fixture missing: ${FIXTURE}. Restore it, or set SLICEREADY_SKIP_E2E=1 to opt out on purpose.`);
   }
 });
 
