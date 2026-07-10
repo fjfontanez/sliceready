@@ -59,19 +59,47 @@ else
 fi
 
 # 3. Commit hygiene on this branch only.
-RANGE="$(git merge-base "$BASE_BRANCH" HEAD 2>/dev/null)..HEAD"
-if git log --format='%b' "$RANGE" 2>/dev/null | grep -Eiq 'co-authored-by|generated with|🤖'; then
+#
+#    Resolve the base explicitly. On a CI runner the local `main` branch does not
+#    exist — only `origin/main` does — and a swallowed `git merge-base` error
+#    would leave RANGE as "..HEAD", quietly passing both gates below without
+#    reading a single commit. A silent pass is the failure mode this whole script
+#    exists to prevent, so it is a hard error here.
+BASE_REF=""
+for candidate in "$BASE_BRANCH" "origin/$BASE_BRANCH"; do
+  if git rev-parse --verify --quiet "$candidate" >/dev/null; then BASE_REF="$candidate"; break; fi
+done
+MERGE_BASE=""
+[ -n "$BASE_REF" ] && MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null)
+
+if [ -z "$MERGE_BASE" ]; then
+  record "commit range" "FAIL" "cannot resolve a merge base against '$BASE_BRANCH' — commit gates would pass vacuously"
+  RANGE=""
+elif [ "$MERGE_BASE" = "$(git rev-parse HEAD)" ]; then
+  record "commit range" "PASS" "no commits ahead of $BASE_REF"
+  RANGE=""
+else
+  record "commit range" "PASS" "$(git rev-list --count "$MERGE_BASE..HEAD") commit(s) vs $BASE_REF"
+  RANGE="$MERGE_BASE..HEAD"
+fi
+
+if [ -z "$RANGE" ]; then
+  record "no AI attribution" "SKIP" "no commit range"
+  record "conventional commits" "SKIP" "no commit range"
+elif git log --format='%b' "$RANGE" | grep -Eiq 'co-authored-by|generated with|🤖'; then
   record "no AI attribution" "FAIL" "found in a commit body"
 else
   record "no AI attribution" "PASS"
 fi
 
-BAD_SUBJECTS=$(git log --format='%s' "$RANGE" 2>/dev/null \
-  | grep -vE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9/-]+\))?!?: .+' || true)
-if [ -z "$BAD_SUBJECTS" ]; then
-  record "conventional commits" "PASS"
-else
-  record "conventional commits" "FAIL" "$(echo "$BAD_SUBJECTS" | head -3 | tr '\n' '; ')"
+if [ -n "$RANGE" ]; then
+  BAD_SUBJECTS=$(git log --format='%s' "$RANGE" \
+    | grep -vE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9/-]+\))?!?: .+' || true)
+  if [ -z "$BAD_SUBJECTS" ]; then
+    record "conventional commits" "PASS"
+  else
+    record "conventional commits" "FAIL" "$(echo "$BAD_SUBJECTS" | head -3 | tr '\n' '; ')"
+  fi
 fi
 
 # 4. Tests. Both workspaces. Exit code, not the summary line.
@@ -82,13 +110,21 @@ run "unit tests" npm test
 run "typecheck + build" npm run build -w @mesh-repair/web
 
 # 6. End to end, cold cache, against the production build. The only exercise the
-#    wiring ever gets.
+#    wiring in main.ts and viewer.ts ever gets.
+#
+#    Two specs run: smoke.e2e.ts builds a 10-triangle holed cube in memory and
+#    always runs; repair.e2e.ts needs the 30 MB gitignored Tripo fixture and
+#    fails loudly without it. MESH_REPAIR_SKIP_E2E=1 opts out of the big one —
+#    that is what CI sets, because the browser measures the wiring and the
+#    triangle count only measures performance.
+rm -rf apps/web/node_modules/.vite
 if [ "${SKIP_E2E:-0}" = "1" ]; then
   record "e2e (cold, prod)" "SKIP" "SKIP_E2E=1 — say so in the PR"
+elif [ "${MESH_REPAIR_SKIP_E2E:-0}" = "1" ]; then
+  run "e2e (smoke only)" npm run test:e2e -w @mesh-repair/web
 elif [ ! -f packages/engine/test/fixtures/tripo-broken.3mf ]; then
-  record "e2e (cold, prod)" "FAIL" "fixture missing; restore it or state that the e2e did not run"
+  record "e2e (cold, prod)" "FAIL" "Tripo fixture missing. Restore it, or set MESH_REPAIR_SKIP_E2E=1 to run the smoke spec alone and say so in the PR"
 else
-  rm -rf apps/web/node_modules/.vite
   run "e2e (cold, prod)" npm run test:e2e -w @mesh-repair/web
 fi
 
