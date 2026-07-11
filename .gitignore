@@ -31,3 +31,7 @@ playwright-report/
 
 # Local-only marketing / working docs (kept out of the repo on purpose)
 docs/marketing/
+
+# gga review contract — kept local so `gga run --pr-mode` still works, but not
+# published (purged from history before the repo went public)
+AGENTS.md
