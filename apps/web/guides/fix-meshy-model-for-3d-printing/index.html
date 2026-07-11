@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Fix a Meshy Model for 3D Printing (Free, In-Browser)</title>
+    <meta
+      name="description"
+      content="Your Meshy model looks finished but won't slice. Here's what breaks inside the mesh, why STL drops the texture, and how to repair it free in your browser."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/fix-meshy-model-for-3d-printing/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/fix-meshy-model-for-3d-printing/" />
+    <meta property="og:title" content="How to Fix a Meshy Model for 3D Printing (Free, In-Browser)" />
+    <meta
+      property="og:description"
+      content="A textured export is not a printable solid. Here is what hides inside a Meshy mesh, what STL throws away, and how to repair the geometry without uploading anything."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "How to fix a Meshy model for 3D printing",
+            "description": "Why a Meshy model that looks finished still won't slice, what STL keeps and what it discards, and how to repair the mesh topology in the browser.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/fix-meshy-model-for-3d-printing/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "Fix a Meshy model for 3D printing", "item": "https://sliceready.app/guides/fix-meshy-model-for-3d-printing/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Can Meshy models be 3D printed?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, but rarely straight from the export. A generated mesh is optimised to render correctly, not to enclose a watertight solid, so it commonly arrives with open edges, inconsistent normals, internal faces and stray fragments. Repair the topology first and most Meshy models print like any other model."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why won't my Meshy model slice?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Because the mesh is almost certainly not manifold. A slicer must decide, for every point on every layer, whether that point is inside the solid or outside it, and that question has no answer when the surface has holes, inverted normals, or extra faces buried inside the body."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does STL keep the texture from Meshy?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. STL stores triangles and nothing else — no colour, no texture, no UV coordinates, no material. When you convert a textured GLB or OBJ to STL, the colour is discarded and only the geometry survives. That is expected behaviour, not a failed export."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need Blender to print a Meshy model?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not for the usual faults. Closing open edges, correcting flipped normals and removing degenerate triangles are mechanical repairs that a browser tool such as SliceReady performs locally with WebAssembly. Blender earns its place only when the shape itself must change, such as thickening a blade thinner than your nozzle."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <span class="here">Guides</span>
+      </nav>
+
+      <article>
+        <h1>How to fix a Meshy model for 3D printing</h1>
+        <p class="byline">Updated July 2026 · 5 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            A Meshy model won't print because the mesh was built to look right, not to enclose a
+            solid. Convert it to a plain STL — the colour is dropped, the geometry stays — then
+            repair the topology: close the open edges, fix the flipped normals, remove the junk
+            triangles hiding inside the body. Then slice.
+          </p>
+        </div>
+
+        <p>
+          The generation came back looking great. Clean silhouette, convincing texture, the kind of
+          thing you would happily show someone. Then you dropped it into your slicer, and the slicer
+          either refused it outright or printed a hollow, shredded impression of the object you
+          thought you had.
+        </p>
+
+        <p>
+          Nothing malfunctioned. The mesh you are holding is exactly what the system was built to
+          produce — and being printable was never part of that job.
+        </p>
+
+        <h2>The model is finished to the eye and broken to the slicer</h2>
+
+        <p>
+          A renderer and a slicer ask a 3D file two very different questions, and only one of them is
+          easy.
+        </p>
+
+        <p>
+          The renderer asks: <em>which triangles face the camera, and what colour are they?</em> It
+          draws the skin it can see and never looks behind it. A mesh can have holes in the back of
+          the head, faces wound inside-out, and loose scraps of geometry rattling around inside the
+          torso — and the render still comes out flawless, because none of that is visible from
+          outside.
+        </p>
+
+        <p>
+          The slicer asks the hard question: <em>for every point on every layer, is this inside the
+          object or outside it?</em> That only has an answer if the surface actually closes. Poke one
+          hole in it and "inside" stops being defined. The model that looked finished is, to a slicer,
+          not an object at all — just a shell of triangles floating in space.
+        </p>
+
+        <p>
+          The reason is in the training. Image-to-3D and text-to-3D systems are optimised against
+          <strong>visual</strong> objectives: the reward is that the renders match the target from a
+          set of viewpoints. Watertightness is not in the loss function. It is never even measured. On
+          top of that, the mesh you download is usually extracted from an implicit representation — a
+          density field or an SDF — turned into triangles and then decimated to keep the file small.
+          Every step in that chain can leave a hole, invert a winding, or strand a fragment of
+          geometry inside the body. It is the same failure pattern behind
+          <a href="/guides/ai-generated-model-wont-print/">every AI-generated model that won't
+          print</a>.
+        </p>
+
+        <h2>Texture is not geometry — and STL keeps neither</h2>
+
+        <p>
+          Here is the assumption that costs people an evening: a good-looking texture means a good
+          mesh underneath. It does not. Colour is painted onto the surface. It says nothing whatsoever
+          about whether that surface encloses a volume.
+        </p>
+
+        <p>
+          Multi-view, textured generation makes this worse, not better. When a system is reconciling
+          several viewpoints into one body, it can leave behind <strong>internal faces</strong> —
+          surfaces that sit <em>inside</em> the model where you will never see them — and small
+          <strong>floating fragments</strong> sealed within the torso like swallowed marbles. From the
+          outside, invisible. To the slicer, more surfaces to reason about, more "inside" boundaries,
+          more contradictory answers per layer. That is where the mystery warnings and the bizarre
+          infill come from.
+        </p>
+
+        <p>
+          So you export to STL, and the first surprise lands: <strong>STL carries no colour at
+          all</strong>. None. It stores triangles and nothing else — no texture, no UVs, no materials,
+          no vertex colours. Going from a textured GLB or OBJ to an STL throws the entire appearance
+          away. That is not a broken export. That is what STL is.
+        </p>
+
+        <p>
+          What survives is the mesh — and the mesh is the part that has to be watertight. STL keeps no
+          colour, and it keeps no promises about the geometry either. It hands the slicer a pile of
+          triangles and lets the slicer find out.
+        </p>
+
+        <h2>What actually breaks</h2>
+
+        <p>
+          The same faults show up again and again — and they are not all the same kind of problem.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">What breaks</th>
+                <th scope="col">What you see in the slicer</th>
+                <th scope="col">Kind of problem</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Open edges</td>
+                <td>"Not watertight", hollow walls</td>
+                <td>Topology — repairable</td>
+              </tr>
+              <tr>
+                <td>Flipped normals</td>
+                <td>Inside-out infill, dark patches</td>
+                <td>Topology — repairable</td>
+              </tr>
+              <tr>
+                <td>Internal faces and floating fragments</td>
+                <td>Stray geometry inside the body; warnings and odd infill</td>
+                <td>Topology — usually repairable</td>
+              </tr>
+              <tr>
+                <td>Degenerate triangles</td>
+                <td>Erratic layers</td>
+                <td>Topology — repairable</td>
+              </tr>
+              <tr>
+                <td>Thin walls (blades, fingers, hair)</td>
+                <td>Slices fine, prints as gaps</td>
+                <td><strong>Geometry — needs modelling</strong></td>
+              </tr>
+              <tr>
+                <td>Arbitrary scale</td>
+                <td>Imports absurdly small or absurdly large</td>
+                <td><strong>Settings — fix in slicer</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          The first four are plumbing: the mesh describes the right shape badly, and a repair tool
+          fixes that without touching your design. The last two are not repairs at all. A thin wall is
+          the shape being wrong. Scale is a slider in your slicer.
+        </p>
+
+        <h2>Step by step: Meshy export to printable STL</h2>
+
+        <p>
+          <a href="/">SliceReady</a> runs the repair on your machine with WebAssembly. The file is
+          never uploaded — there is no server to upload it to.
+        </p>
+
+        <ol class="steps">
+          <li>
+            Export or convert your model to STL or 3MF. The colour is discarded — that is expected. If
+            your generator offers a remesh or print-oriented export, take it: it usually reduces the
+            damage, but verify in your slicer anyway.
+          </li>
+          <li>Drop the file onto SliceReady.</li>
+          <li>
+            The damage is counted and highlighted on the model: open edges, flipped normals,
+            degenerate triangles.
+          </li>
+          <li>
+            The repair runs and gives you a plain-language ledger of exactly what changed — how many
+            holes were closed, how many normals corrected, how many dead triangles removed.
+          </li>
+          <li>Download the repaired STL and slice it.</li>
+        </ol>
+
+        <div class="limit">
+          <p>
+            <strong>What it will not do.</strong> SliceReady repairs <em>topology</em> — open edges,
+            flipped normals, degenerate triangles — using ADMesh compiled to WebAssembly and running
+            locally in your browser. It does not thicken thin walls, hollow the model, remesh it,
+            rescale it, sculpt it, or handle colour and texture in any way. Those change the shape you
+            asked for, and a tool that silently reshapes your model is a tool you cannot trust.
+          </p>
+          <p>
+            If damage survives the repair, the report says so outright:
+            <em>"Partially fixed — this mesh is still not watertight."</em> A failed repair does not
+            get to call itself repaired.
+          </p>
+        </div>
+
+        <h2>The one it can't fix: thin walls</h2>
+
+        <p>
+          This is the fault that catches the people who did everything else right. The mesh is
+          watertight, the normals agree, the slicer accepts it without a murmur — and the sword blade
+          and the outstretched fingers come out as ragged gaps, or simply never appear.
+        </p>
+
+        <p>
+          The reason is physical, not digital. A typical nozzle is 0.4&nbsp;mm across. It cannot lay
+          down a wall thinner than that, and a generator that never once thought about extrusion width
+          will happily hand you a cape 0.1&nbsp;mm thick. The geometry is valid. There is just nothing
+          there to print.
+        </p>
+
+        <p>
+          Character prompts are the worst offenders, and it is always the same parts: blades, fingers,
+          hair, capes. Thicken them in a modelling tool, or scale the whole model up until the thin
+          bits clear your nozzle width. Knowing which of the two problems you have — plumbing or shape
+          — is what saves the evening.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>Can Meshy models be 3D printed?</h3>
+          <p>
+            Yes — but almost never straight out of the export. Repair the topology first, check the
+            thin parts, set the scale. Once the mesh is watertight it prints like anything else.
+          </p>
+
+          <h3>Why won't my Meshy model slice?</h3>
+          <p>
+            Because the exported mesh is almost certainly
+            <a href="/guides/fix-non-manifold-stl/">not manifold</a>. The slicer needs a closed
+            surface to work out what is inside the solid, and a generated mesh usually has holes,
+            normals facing the wrong way, or extra faces buried inside the body where you cannot see
+            them.
+          </p>
+
+          <h3>Does STL keep the texture from Meshy?</h3>
+          <p>
+            No — and this surprises almost everyone. STL stores triangles and nothing else. No colour,
+            no texture, no UVs, no materials. Convert a textured GLB or OBJ to STL and the appearance
+            is gone; only the shape survives. Colour on the printed object is a multi-material or
+            painting problem, not a mesh problem.
+          </p>
+
+          <h3>Do I need Blender to print a Meshy model?</h3>
+          <p>
+            Not for the usual faults. Holes, flipped normals and degenerate triangles are mechanical
+            repairs — no modelling skill, no install. Blender earns its place when the shape itself has
+            to change: thickening a blade, remeshing a sculpt, hollowing a bust.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Got a Meshy model that won't slice?</strong></p>
+          <p>
+            Drop it into SliceReady. It repairs in your browser, nothing is uploaded, and the report
+            tells you the truth about what was fixed and what was not.
+          </p>
+          <p><a class="button" href="/">Repair my model &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
