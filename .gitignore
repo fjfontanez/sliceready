@@ -28,3 +28,6 @@ playwright-report/
 
 # Agent worktrees (scratch, auto-managed)
 .claude/worktrees/
+
+# Local-only marketing / working docs (kept out of the repo on purpose)
+docs/marketing/
