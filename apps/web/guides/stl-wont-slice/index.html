@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>STL Won't Slice? 6 Causes and How to Fix Each</title>
+    <meta
+      name="description"
+      content="Slicer opens the file but won't slice it? Here are the 6 usual causes — non-manifold geometry, holes, bad normals, scale — and the fastest fix for each."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/stl-wont-slice/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/stl-wont-slice/" />
+    <meta property="og:title" content="STL Won't Slice? 6 Causes and How to Fix Each" />
+    <meta
+      property="og:description"
+      content="Triage first: is it the mesh or the slicer? Then fix the one you actually have — free, in your browser, with nothing uploaded."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "STL won't slice? The 6 usual causes, and how to fix each",
+            "description": "A symptom-first troubleshooting checklist for an STL your slicer refuses to slice.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/stl-wont-slice/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "STL won't slice", "item": "https://sliceready.app/guides/stl-wont-slice/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Why does my slicer open the STL but refuse to slice it?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Because opening a file only requires reading triangles, while slicing requires deciding what is inside the solid. If the surface does not close — holes, edges shared by more than two triangles, normals facing the wrong way — that question has no answer, and the slicer either refuses or guesses badly."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I know if the problem is the mesh or the slicer?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Open the same file in a second slicer. If both refuse it, the mesh is broken and needs repairing. If only one refuses it, or the model sits below the build plate or imports at an absurd size, the problem is a setting rather than the geometry."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why does my STL slice at one layer height but not another?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "That is the signature of a mesh the slicer is patching on the fly. Slicers close small gaps at slice time, layer by layer, so a marginally broken model can survive one layer height and shred at the next. The geometry is not stable; repair the mesh instead of hunting for a layer height that hides it."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can a slicer repair a broken STL by itself?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Slicers patch gaps at slice time, but they do not repair the file, and their patching is a per-layer guess rather than a fix to the geometry. Repairing the mesh first removes the guesswork and makes the result reproducible across slicers and settings."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <span class="here">Guides</span>
+      </nav>
+
+      <article>
+        <h1>STL won't slice? The 6 usual causes, and how to fix each</h1>
+        <p class="byline">Updated July 2026 · 7 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            An STL usually won't slice because the mesh is not a closed solid: it has holes, edges
+            shared by more than two triangles, or normals facing the wrong way, so the slicer cannot
+            tell inside from outside. The rest of the time it is not the mesh at all — it is scale,
+            placement, or a corrupt file. Work out which before you fix anything.
+          </p>
+        </div>
+
+        <p>
+          The file opens. The model appears on the plate. And then the slicer either throws an error,
+          greys out the slice button, or produces something hollow and shredded that bears no
+          relationship to what you saw.
+        </p>
+
+        <p>
+          There are six causes worth knowing, and they split into two groups that need completely
+          different responses. Getting the group wrong is how people lose an evening.
+        </p>
+
+        <h2>First: is it the mesh, or is it the slicer?</h2>
+
+        <p>
+          Two minutes of triage saves you from fixing the wrong thing.
+        </p>
+
+        <ul>
+          <li>
+            <strong>Open the file in a second slicer.</strong> If both refuse it, the geometry is
+            broken. If only one refuses it, you are chasing a setting.
+          </li>
+          <li>
+            <strong>Look at the size and position on the plate.</strong> A model 2&nbsp;mm tall, or one
+            sunk below the build surface, is a settings problem wearing a slicing problem's clothes.
+          </li>
+          <li>
+            <strong>Look for the words.</strong> "Not watertight", "non-manifold", "needs repair" — the
+            slicer is telling you the mesh is the problem. Believe it.
+          </li>
+        </ul>
+
+        <p>
+          Causes 1 to 4 below are mesh problems. Causes 5 and 6 are not, and no repair tool on earth
+          will help you with them.
+        </p>
+
+        <h2>The 6 reasons an STL won't slice</h2>
+
+        <h3>1. Non-manifold geometry</h3>
+        <p>
+          The umbrella fault, and the one your slicer most often names. The surface does not properly
+          enclose a solid: edges belong to one triangle or to three, rather than to exactly two. The
+          slicer cannot answer "is this point inside?" and gives up.
+          <a href="/guides/fix-non-manifold-stl/">Full guide: how to fix a non-manifold STL</a>.
+        </p>
+
+        <h3>2. Holes and open edges</h3>
+        <p>
+          The most common single defect. An edge used by only one triangle means the surface has a gap
+          — the mesh is "not watertight". Usually it is not a visible crater but one missing triangle
+          you will never spot by eye.
+          <a href="/guides/fix-holes-in-stl/">Full guide: how to fix holes and open edges</a>.
+        </p>
+
+        <h3>3. Flipped or inverted normals</h3>
+        <p>
+          Some triangles are wound backwards, so they tell the slicer that outside is inside. The mesh
+          can be perfectly closed and still unprintable, because the slicer fills the room around your
+          model rather than the model.
+          <a href="/guides/fix-flipped-normals-stl/">Full guide: how to fix flipped normals</a>.
+        </p>
+
+        <h3>4. Degenerate and zero-area triangles</h3>
+        <p>
+          Faces with no area, where two vertices sit in the same place. They are not non-manifold in
+          themselves, but they wreck the edge-pairing that every repair and slicing algorithm relies
+          on, so they tend to be removed first and fix a surprising number of "weird layer" complaints.
+        </p>
+
+        <h3>5. Scale, units, or placement — <em>not a mesh problem</em></h3>
+        <p>
+          STL carries no units. A file authored in metres and read as millimetres arrives a thousand
+          times too big; a generated model arrives at whatever scale its coordinate space implied. And
+          a model floating above the plate, or sunk beneath it, will not slice into anything useful.
+          Fix all of this in the slicer. A mesh repair tool cannot help, and any tool that offers to
+          "fix" your scale by guessing is changing your model behind your back.
+        </p>
+
+        <h3>6. A corrupt or empty file — <em>not a mesh problem either</em></h3>
+        <p>
+          An interrupted download, a truncated export, an STL with zero triangles in it. If the slicer
+          shows nothing at all on the plate, or the file is suspiciously small, re-export or
+          re-download it before you go looking for defects that are not there.
+        </p>
+
+        <h2>Fix the mesh problems in one step</h2>
+
+        <p>
+          Causes 1 to 4 are all the same kind of fault — the mesh describes the right shape badly — and
+          they are all repaired by the same operation.
+          <a href="/">SliceReady</a> does it in your browser with WebAssembly. Nothing is uploaded,
+          because there is no server to upload it to.
+        </p>
+
+        <ol class="steps">
+          <li>Drop your STL or 3MF onto SliceReady.</li>
+          <li>The mesh is analysed and the damage highlighted: open edges, flipped normals, degenerate triangles, counted individually.</li>
+          <li>The repair runs, and you get a ledger of exactly what changed — not a green tick, a count.</li>
+          <li>Download the repaired STL and slice it.</li>
+        </ol>
+
+        <div class="limit">
+          <p>
+            <strong>What it does not do.</strong> SliceReady repairs topology. It does not thicken thin
+            walls, hollow the model, remesh it, or rescale it. Those change the shape you asked for,
+            and a tool that silently reshapes your model is a tool you cannot trust.
+          </p>
+          <p>
+            If damage survives the repair, the report says so outright:
+            <em>"Partially fixed — this mesh is still not watertight."</em> A failed repair does not
+            get to call itself repaired.
+          </p>
+        </div>
+
+        <h2>Fix the non-mesh problems in your slicer</h2>
+
+        <p>
+          Nothing to repair here — just settings, and they take seconds once you know that is what you
+          are looking at.
+        </p>
+
+        <ul>
+          <li><strong>Scale.</strong> Set the model to the size you actually want. If it arrived a thousand times too large or too small, that is a unit mismatch, not damage.</li>
+          <li><strong>Placement.</strong> Drop the model onto the plate. Anything below the build surface will not be sliced.</li>
+          <li><strong>Re-export.</strong> If the file is empty or truncated, no amount of repairing will conjure the triangles back.</li>
+        </ul>
+
+        <h2>The special case: models from AI generators</h2>
+
+        <p>
+          If your file came out of Tripo, Meshy, Rodin or any other image-to-3D system, expect several
+          of these faults at once, every time. Those tools are optimised to produce something that
+          <em>renders</em> well, and watertightness was never in the objective.
+          <a href="/guides/ai-generated-model-wont-print/">Here is what breaks in an AI-generated mesh, and why</a>.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>Why does my slicer open the STL but refuse to slice it?</h3>
+          <p>
+            Opening a file only means reading triangles. Slicing means deciding, for every point on
+            every layer, whether it sits inside the solid. A surface with a hole in it cannot answer
+            that, so the slicer either refuses or guesses — and the guess is what prints as a shell.
+          </p>
+
+          <h3>How do I know if the problem is the mesh or the slicer?</h3>
+          <p>
+            Open it in a second slicer. Two refusals means the mesh is broken. One refusal — or a model
+            that imports absurdly sized or below the plate — means you are looking at a setting.
+          </p>
+
+          <h3>Why does my STL slice at one layer height but not another?</h3>
+          <p>
+            That is the fingerprint of a marginally broken mesh that your slicer is patching on the
+            fly, layer by layer. It survives one height and shreds at the next. Do not go hunting for
+            the layer height that hides it — repair the geometry and the behaviour becomes
+            reproducible.
+          </p>
+
+          <h3>Can a slicer repair a broken STL by itself?</h3>
+          <p>
+            It patches; it does not repair. The file on disk is still broken, and the patching is a
+            per-layer guess that changes with your settings. Fixing the mesh once is cheaper than
+            re-rolling the dice on every print.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Slicer refusing your STL right now?</strong></p>
+          <p>
+            Drop it into SliceReady. It repairs in your browser, nothing is uploaded, and the report
+            tells you the truth about what was fixed and what was not.
+          </p>
+          <p><a class="button" href="/">Repair my STL &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
