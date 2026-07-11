@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { MockInstance } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { repairedFileName, downloadStl } from '../src/download';
 
 describe('repairedFileName', () => {
@@ -18,13 +18,13 @@ describe('downloadStl', () => {
   let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>;
   let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>;
   let createElementSpy: MockInstance<typeof document.createElement>;
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: Mock<() => void>;
 
   beforeEach(() => {
     vi.useFakeTimers();
     createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue(mockUrl);
     revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    clickSpy = vi.fn();
+    clickSpy = vi.fn<() => void>();
     // Capture the real implementation before spying, so the mock can still
     // produce a real, fully functional anchor element — only `click` is
     // replaced, so href/download assignment behaves exactly as in the browser.
