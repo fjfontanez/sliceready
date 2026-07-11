@@ -1,0 +1,214 @@
+/* Prose layer for the static /guides pages.
+   The guides ship as plain HTML with no module script, so the fonts cannot be
+   pulled in from main.ts the way the app does it — they are imported here, and
+   this stylesheet is the page's only entry point. styles.css is imported whole
+   rather than having its tokens copied: the palette must never fork between the
+   app and the guides. */
+
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import './styles.css';
+
+.guide {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2rem) 5rem;
+}
+
+/* ---------- Masthead ---------- */
+
+.guide-nav {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.guide-nav a { color: var(--ink); text-decoration: none; }
+.guide-nav a:hover { color: var(--molten); }
+.guide-nav .sep { color: var(--faint); }
+.guide-nav .here { color: var(--faint); }
+
+/* ---------- Prose ---------- */
+
+.guide article { max-width: var(--measure); }
+
+.guide h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2rem, 5.5vw, 3.1rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin: 2.5rem 0 1rem;
+  text-wrap: balance;
+}
+
+.guide h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 3rem 0 0.85rem;
+  text-wrap: balance;
+}
+
+.guide h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 1.85rem 0 0.5rem;
+  color: var(--ink);
+}
+
+.guide p { margin: 0 0 1.1rem; color: var(--ink-soft); }
+.guide article > p:first-of-type { font-size: 1.1rem; color: var(--ink); }
+
+.guide a { color: var(--molten); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.guide strong { color: var(--ink); font-weight: 600; }
+
+.guide ul, .guide ol { margin: 0 0 1.25rem; padding-left: 1.25rem; color: var(--ink-soft); }
+.guide li { margin-bottom: 0.5rem; }
+.guide li::marker { color: var(--faint); }
+
+/* ---------- Byline ---------- */
+
+.byline {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 2rem;
+}
+
+/* ---------- Answer box ---------- */
+
+/* The short answer, hoisted above the article. It is the passage a featured
+   snippet or an AI overview will lift, so it has to stand alone without the
+   paragraphs around it. */
+.answer {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--molten);
+  background: var(--panel);
+  padding: 1.25rem 1.4rem;
+  margin: 0 0 2.5rem;
+  border-radius: 3px;
+}
+.answer p { margin: 0; color: var(--ink); }
+.answer .label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 0.6rem;
+}
+
+/* ---------- Honesty note ---------- */
+
+/* Oxblood means damage and limits, never "act". Same semantic rule as the app. */
+.limit {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxblood);
+  background: var(--oxblood-soft);
+  padding: 1.1rem 1.3rem;
+  margin: 0 0 1.5rem;
+  border-radius: 3px;
+}
+.limit p:last-child { margin-bottom: 0; }
+
+/* ---------- Table ---------- */
+
+.table-scroll { overflow-x: auto; margin: 0 0 1.5rem; }
+.guide table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 34rem;
+  font-size: 0.92rem;
+}
+.guide th, .guide td {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-soft);
+  vertical-align: top;
+}
+.guide th {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border-bottom-color: var(--line);
+}
+.guide td:first-child { color: var(--ink); }
+
+/* ---------- Steps ---------- */
+
+.steps { list-style: none; padding: 0; counter-reset: step; }
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.4rem;
+  margin-bottom: 1rem;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--sunken);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--molten);
+}
+
+/* ---------- FAQ ---------- */
+
+.faq h3 { margin-top: 1.6rem; }
+
+/* ---------- Call to action ---------- */
+
+.guide-cta {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  margin: 3rem 0 0;
+  border-radius: 4px;
+  text-align: center;
+}
+.guide-cta p { max-width: none; }
+/* Qualified with .guide: a bare `.button` loses to `.guide a` on specificity, which
+   paints the label molten on a molten background — an invisible call to action. */
+.guide a.button {
+  display: inline-block;
+  background: var(--molten);
+  color: #0b0b0c;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 3px;
+  margin-top: 0.4rem;
+}
+.guide a.button:hover { background: var(--molten-deep); }
+
+.guide footer {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
