@@ -18,7 +18,12 @@ const guideEntries: Record<string, string> = existsSync(guidesDir)
   ? Object.fromEntries(
       readdirSync(guidesDir, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
-        .map((entry) => [`guide-${entry.name}`, resolve(guidesDir, entry.name, 'index.html')]),
+        .map((entry) => [`guide-${entry.name}`, resolve(guidesDir, entry.name, 'index.html')])
+        // Key on the page, not the folder. A directory without an index.html — a
+        // draft, a stray assets folder — would otherwise hand Rollup an input path
+        // that does not exist, and the build would die with a resolution error
+        // that reads like a Vite bug rather than a missing file.
+        .filter(([, page]) => existsSync(page)),
     )
   : {};
 
