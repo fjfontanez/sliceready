@@ -28,10 +28,18 @@ export function renderPromo(root: HTMLElement): void {
   cta.textContent = 'SliceMargin';
   attribution.append(cta, '.');
 
+  // The guides are pre-rendered pages served outside the SPA bundle. Nothing
+  // else on this page points at them, so without this anchor a crawler that
+  // lands on the root never discovers /guides at all.
+  const guides = document.createElement('a');
+  guides.dataset.testid = 'guides-link';
+  guides.href = '/guides/fix-non-manifold-stl/';
+  guides.textContent = 'Why your STL won’t slice';
+
   const meta = document.createElement('span');
   meta.className = 'foot-meta';
   meta.textContent = 'NO UPLOAD · NO ACCOUNT · NO TRACKING';
 
-  footer.append(attribution, meta);
+  footer.append(attribution, guides, meta);
   root.append(header, footer);
 }

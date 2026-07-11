@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Fix a Non-Manifold STL (Free, in Your Browser)</title>
+    <meta
+      name="description"
+      content="Non-manifold STL won't slice? Learn what it means, why it breaks printing, and how to repair open edges and flipped normals in seconds — no Blender, no upload."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/fix-non-manifold-stl/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/fix-non-manifold-stl/" />
+    <meta property="og:title" content="How to Fix a Non-Manifold STL (Free, in Your Browser)" />
+    <meta
+      property="og:description"
+      content="Your slicer says non-manifold. Here is what it means, the three defects behind it, and how to repair the mesh in your browser without uploading anything."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "How to fix a non-manifold STL (and why your slicer rejects it)",
+            "description": "What non-manifold means, the three mesh defects behind it, and how to repair an STL in the browser.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/fix-non-manifold-stl/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "Fix a non-manifold STL", "item": "https://sliceready.app/guides/fix-non-manifold-stl/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Can Cura fix a non-manifold STL?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Cura patches small gaps at slice time with its \"union overlapping volumes\" and hole-closing behaviour, but it does not repair the mesh file. It guesses per layer, so the same model can slice cleanly at one layer height and produce shredded walls at another. Repairing the topology first removes the guesswork."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does non-manifold geometry matter if the model looks fine?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. A renderer only draws the surface it can see, so a mesh with holes or inverted normals can look flawless on screen. A slicer has to decide which points are inside the solid, and that question has no answer when the surface does not close. Looking right and being printable are different properties."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What is the difference between non-manifold and not watertight?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not watertight means the surface has holes: at least one edge is used by only one triangle. Non-manifold is the wider fault and includes holes, edges shared by more than two triangles, and inconsistent normals. Every mesh that is not watertight is non-manifold, but a fully closed mesh can still be non-manifold."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can a non-manifold STL be fixed without Blender?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Closing open edges, correcting flipped normals and removing degenerate triangles are mechanical operations that need no modelling skill and no desktop install. Browser tools such as SliceReady run that repair locally with WebAssembly. Blender is only required for work that changes the shape, such as thickening thin walls or remeshing."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <span class="here">Guides</span>
+      </nav>
+
+      <article>
+        <h1>How to fix a non-manifold STL (and why your slicer rejects it)</h1>
+        <p class="byline">Updated July 2026 · 6 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            A non-manifold STL is a mesh whose surface does not properly enclose a solid — it has
+            open edges, edges shared by more than two triangles, or normals pointing the wrong way.
+            Slicers need a closed volume to tell inside from outside. To fix a non-manifold STL,
+            repair the topology: close the open edges, correct the flipped normals, and drop the
+            degenerate triangles.
+          </p>
+        </div>
+
+        <p>
+          Your slicer opened the file. It showed the model. And then it refused to slice it — or
+          worse, it sliced it into something hollow and shredded that you only noticed forty minutes
+          into the print. The word it threw at you was <strong>non-manifold</strong>.
+        </p>
+
+        <p>
+          It is the most common reason a model that looks perfect on screen never becomes an object.
+          And the fix is almost never complicated. It is just that most guides answer it by sending
+          you to Blender — a full 3D suite, a two-hour tutorial, an afternoon gone — for a job that
+          is mechanical and takes seconds.
+        </p>
+
+        <h2>What "non-manifold" actually means</h2>
+
+        <p>
+          A <strong>manifold</strong> mesh is one that could exist as a real solid object. Its
+          surface is closed, it has a definite inside and a definite outside, and every edge is
+          shared by exactly two triangles — no more, no fewer. <strong>Non-manifold</strong> means
+          that rule is broken somewhere.
+        </p>
+
+        <p>
+          Think of the surface as the skin of a balloon. Blow it up and the skin encloses a volume:
+          every point in space is either in the air inside, or out in the room. That is manifold. Now
+          cut a hole in the balloon, or glue a third sheet of rubber along a seam where two already
+          meet. Where is "inside" now? The question stops having an answer. That is a non-manifold
+          mesh, and your slicer is the one being asked the question.
+        </p>
+
+        <h2>Why a non-manifold STL won't slice</h2>
+
+        <p>
+          A slicer works by intersecting your model with a stack of horizontal planes and filling
+          what falls inside the resulting outlines. To do that it must know, for every point on every
+          layer, whether that point is inside the solid or outside it. A closed surface answers that
+          unambiguously. A surface with a hole in it does not, so the slicer either bails out with a
+          <em>non-manifold</em> or <em>not watertight</em> error, or it guesses — and a guess is what
+          produces missing walls, phantom infill, and models that print as a paper-thin shell.
+        </p>
+
+        <p>
+          This is also why the model can look completely fine in the preview. A renderer only has to
+          draw the triangles facing the camera. It never asks what is inside them. Looking right and
+          being printable are two different properties, and only one of them shows up on screen.
+        </p>
+
+        <h2>The three defects behind a non-manifold mesh</h2>
+
+        <p>Nearly every non-manifold STL fails for one of these reasons — often several at once.</p>
+
+        <h3>1. Open edges (holes)</h3>
+        <p>
+          An edge used by only one triangle instead of two. The surface has a gap. Sometimes the gap
+          is a visible crater; far more often it is a single missing triangle you will never spot by
+          eye. This is the defect that makes a mesh "not watertight", and it is the most common of
+          the three by a wide margin.
+        </p>
+
+        <h3>2. Flipped or inverted normals</h3>
+        <p>
+          Each triangle carries a <strong>normal</strong> — a vector saying which side faces out. When
+          some triangles are wound backwards, the mesh tells the slicer that outside is inside. The
+          surface may be perfectly closed and still unprintable, because the slicer fills the room
+          around your model instead of the model itself. In a slicer preview, inverted normals often
+          show up as dark or hollow-looking patches.
+        </p>
+
+        <h3>3. Edges shared by more than two triangles</h3>
+        <p>
+          Two solids fused at a single edge, an internal wall left inside a hollow body, a face
+          duplicated on top of itself. The geometry is closed but ambiguous: at that edge, the surface
+          branches, and "inside" forks in two directions. These are the true non-manifold edges, and
+          they are the hardest of the three to repair automatically.
+        </p>
+
+        <p>
+          There is a fourth troublemaker worth naming: <strong>degenerate triangles</strong> — faces
+          with zero area, where two vertices sit in the same place. They are not non-manifold on their
+          own, but they poison the edge-pairing that every repair algorithm depends on, so they get
+          removed first.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Defect</th>
+                <th scope="col">What you see</th>
+                <th scope="col">Auto-repairable?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Open edges</td>
+                <td>"Not watertight", missing walls, hollow print</td>
+                <td>Yes — holes get stitched shut</td>
+              </tr>
+              <tr>
+                <td>Flipped normals</td>
+                <td>Dark patches, inverted or inside-out infill</td>
+                <td>Yes — winding is made consistent</td>
+              </tr>
+              <tr>
+                <td>Degenerate triangles</td>
+                <td>Slicer warnings, erratic layer artefacts</td>
+                <td>Yes — zero-area faces are dropped</td>
+              </tr>
+              <tr>
+                <td>Edges with 3+ faces</td>
+                <td>Slices at some layer heights, not others</td>
+                <td>Sometimes — may need manual cleanup</td>
+              </tr>
+              <tr>
+                <td>Thin walls</td>
+                <td>Slices fine, prints as gaps or nothing</td>
+                <td>No — this is geometry, not topology</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>How to fix a non-manifold STL in your browser</h2>
+
+        <p>
+          <a href="/">SliceReady</a> runs the repair locally with WebAssembly. The file is never
+          uploaded — there is no server to upload it to. It takes about as long as reading this
+          sentence:
+        </p>
+
+        <ol class="steps">
+          <li>Open SliceReady and drop your STL or 3MF onto the page.</li>
+          <li>
+            The mesh is analysed in a background thread: open edges, flipped normals and degenerate
+            triangles are counted, and the damage is highlighted on the model.
+          </li>
+          <li>
+            The repair runs. You get a plain-language ledger of exactly what changed — how many holes
+            were closed, how many normals corrected, how many dead triangles removed.
+          </li>
+          <li>Download the repaired STL and take it back to your slicer.</li>
+        </ol>
+
+        <div class="limit">
+          <p>
+            <strong>What it will not do, and will not pretend to do.</strong> SliceReady repairs
+            <em>topology</em>: open edges, flipped normals, degenerate triangles. It does not thicken
+            thin walls, hollow a model, remesh it, or rescale it — those change the shape, and a tool
+            that silently changes your shape is a tool you cannot trust.
+          </p>
+          <p>
+            If some damage survives the repair, the report says so in as many words:
+            <em>"Partially fixed — this mesh is still not watertight."</em> A repair that failed does
+            not get to call itself repaired.
+          </p>
+        </div>
+
+        <h2>How to check the repair actually worked</h2>
+
+        <p>
+          Do not take the tool's word for it — including ours. Reload the repaired STL in your slicer
+          and look for the same three signals:
+        </p>
+
+        <ul>
+          <li>
+            <strong>Cura</strong> stops showing the "model is not watertight" warning, and the layer
+            preview has solid, continuous walls.
+          </li>
+          <li>
+            <strong>OrcaSlicer / Bambu Studio</strong> stop flagging the object as needing repair, and
+            the sliced result has no gaps in the shell.
+          </li>
+          <li>
+            <strong>Every slicer</strong>: scrub through the layer preview at half height. Missing
+            walls, unexplained infill in mid-air, and a hollow-looking cross-section all mean
+            something is still open.
+          </li>
+        </ul>
+
+        <p>
+          If it slices clean, you are done. If it still complains, the mesh most likely has one of the
+          harder faults — branching edges or self-intersecting geometry — and needs a desktop tool.
+        </p>
+
+        <h2>When a browser repair isn't enough</h2>
+
+        <p>
+          Automatic topology repair fixes the mesh's <em>plumbing</em>. It cannot fix its
+          <em>design</em>. Reach for Blender, Meshmixer's descendants, or your slicer's own mesh tools
+          when:
+        </p>
+
+        <ul>
+          <li><strong>Walls are thinner than your nozzle.</strong> The mesh is valid; there simply is not enough material to extrude. It needs thickening.</li>
+          <li><strong>The model is a dense sculpt that needs remeshing.</strong> Millions of triangles, overlapping subtools, no clean topology to recover.</li>
+          <li><strong>You want it hollowed, scaled, or cut.</strong> That is modelling work, not repair.</li>
+        </ul>
+
+        <p>
+          Knowing which of the two problems you actually have saves the afternoon. Most people who
+          think they need Blender only ever needed the plumbing fixed.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>Can Cura fix a non-manifold STL?</h3>
+          <p>
+            Cura patches small gaps at slice time — it closes holes and unions overlapping volumes on
+            the fly — but it never repairs the mesh file. It is guessing, layer by layer, which is why
+            the same model can slice cleanly at 0.2&nbsp;mm and come out shredded at 0.16&nbsp;mm.
+            Repair the topology first and the guessing stops.
+          </p>
+
+          <h3>Does it matter if the model looks fine?</h3>
+          <p>
+            Yes, and this trips up almost everyone. A renderer draws only the surface facing the
+            camera and never asks what is inside it, so holes and inverted normals are invisible on
+            screen. The slicer asks a harder question, and gets no answer.
+          </p>
+
+          <h3>What is the difference between non-manifold and not watertight?</h3>
+          <p>
+            "Not watertight" means the surface has holes. "Non-manifold" is the broader fault and
+            covers holes, edges shared by more than two triangles, and inconsistent normals. Every
+            mesh that is not watertight is non-manifold — but a mesh can be fully closed and still be
+            non-manifold.
+          </p>
+
+          <h3>Why do AI-generated models come out non-manifold so often?</h3>
+          <p>
+            Because generators such as Tripo, Meshy and Rodin are trained to produce something that
+            <em>renders</em> well, not something that encloses a volume. The reward is a good-looking
+            image, and a good-looking image does not require a watertight solid. So you get a model
+            that is finished to the eye and broken to the slicer, every time —
+            <a href="/guides/ai-generated-model-wont-print/">here is what breaks in an AI mesh, and why</a>.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Have a broken STL open right now?</strong></p>
+          <p>
+            Drop it into SliceReady. It repairs in your browser, nothing is uploaded, and the report
+            tells you the truth about what was fixed and what was not.
+          </p>
+          <p><a class="button" href="/">Repair my STL &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
