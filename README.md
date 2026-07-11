@@ -36,3 +36,12 @@ Individually:
 `main.ts` and `viewer.ts` have no unit tests: both construct a `WebGLRenderer`,
 which happy-dom cannot provide. The e2e is their only exercise, and it covers the
 happy path only.
+
+## License
+
+SliceReady is licensed under **GPL-2.0-or-later** — see [`LICENSE`](LICENSE).
+
+The repair engine compiles [ADMesh](https://github.com/admesh/admesh)
+(GPL-2.0-or-later) to WebAssembly; its license and a corresponding-source offer
+live in [`packages/engine/wasm/`](packages/engine/wasm/). Because the shipped
+WASM is a derivative of ADMesh, the project as a whole is distributed under the GPL.
