@@ -11,6 +11,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: the gates only read the repo and upload an artifact on
+# failure. Nothing needs write access, and the workflow uses no secrets — so a
+# fork PR has nothing to escalate.
+permissions:
+  contents: read
+
 jobs:
   gates:
     runs-on: ubuntu-latest
