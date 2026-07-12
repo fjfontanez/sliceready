@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Fix Holes and Open Edges in an STL File</title>
+    <meta
+      name="description"
+      content="STL has holes? Learn what open edges are, why a mesh that is not watertight will not slice, and close them free in your browser — nothing uploaded."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/fix-holes-in-stl/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/fix-holes-in-stl/" />
+    <meta property="og:title" content="How to Fix Holes and Open Edges in an STL File" />
+    <meta
+      property="og:description"
+      content="Your slicer says the model is not watertight. Here is what an open edge really is, why it breaks the slice, and how to close the holes in your browser without uploading anything."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "How to fix holes and open edges in an STL",
+            "description": "What an open edge is, why a hole makes an STL unsliceable, and how to close the boundary loops in the browser.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/fix-holes-in-stl/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "Fix holes in an STL", "item": "https://sliceready.app/guides/fix-holes-in-stl/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What does \"not watertight\" mean?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It means the mesh surface does not fully enclose a volume. Somewhere in the model an edge is used by only one triangle instead of exactly two, so there is a gap in the skin. \"Not watertight\", \"has holes\" and \"has open edges\" all describe the same fault. A slicer cannot tell inside from outside across that gap, so it either refuses the model or guesses."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can Cura close holes in an STL?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Cura will often still slice a model that it reports as not watertight, but it is patching the gap at slice time rather than repairing the file. The mesh you saved is still broken, and the same model can behave differently at a different layer height. Repairing the topology first removes the guesswork and gives you a file that every slicer reads the same way."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I know if my STL has holes?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You cannot tell by looking. Most holes are a single missing triangle, invisible on screen, because a renderer only draws the surface facing the camera. The reliable signal is a count of open edges. Drop the file into SliceReady and it counts the open edges and highlights them on the model, or watch for a \"not watertight\" warning when your slicer loads the file."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can holes be fixed without Blender?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Closing a boundary loop is a mechanical topology operation, not modelling work, and it needs no 3D skill at all. SliceReady runs ADMesh compiled to WebAssembly in the browser, so the repair happens on your own machine and nothing is uploaded. Blender is only needed when the shape itself has to change, such as thickening thin walls or remeshing a sculpt."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <span class="here">Guides</span>
+      </nav>
+
+      <article>
+        <h1>How to fix holes and open edges in an STL</h1>
+        <p class="byline">Updated July 2026 · 5 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            A hole in an STL is an <strong>open edge</strong>: an edge used by only one triangle
+            instead of exactly two. The surface no longer encloses a solid, which is why your slicer
+            calls the mesh not watertight. To fix it, stitch the boundary loops shut. SliceReady does
+            that in your browser, free, with nothing uploaded.
+          </p>
+        </div>
+
+        <p>
+          The model looks perfect. It renders beautifully, it spins in the preview, every surface is
+          there. Then the slicer loads it, calls it <em>not watertight</em>, and you are left with a
+          file that looks finished and behaves like it is full of gaps.
+        </p>
+
+        <p>
+          It is full of gaps. You just cannot see them. Nearly every "not watertight" STL is broken by
+          a handful of missing triangles too small to notice, and the fix has nothing to do with
+          modelling skill. It is plumbing.
+        </p>
+
+        <h2>What an open edge actually is</h2>
+
+        <p>
+          A triangle mesh describes a solid by wrapping a skin around it. For that skin to hold, every
+          edge must be shared by <strong>exactly two</strong> triangles: this face and the one next to
+          it. That is the whole rule. An <strong>open edge</strong> is an edge only one triangle uses.
+          Its neighbour is missing, so the skin stops there.
+        </p>
+
+        <p>
+          A run of open edges joined end to end forms a <strong>boundary loop</strong> — the rim of a
+          hole. That rim is what a repair tool has to sew shut. And "not watertight", "has holes" and
+          "has open edges" are not three problems. They are three names for this one.
+        </p>
+
+        <p>
+          Here is the part that catches people out: the hole is almost never a crater. Picture a
+          single missing triangle on a smooth curve, tucked under an overhang. Your eye will never
+          find it. Your slicer finds it immediately, because it is not looking at the model — it is
+          counting edges.
+        </p>
+
+        <h2>Why a hole stops your slicer</h2>
+
+        <p>
+          A slicer cuts your model with a stack of horizontal planes and fills what falls inside the
+          outline on each one. To do that it must answer one question for every point on every layer:
+          <em>inside, or outside?</em> A closed surface answers with no ambiguity. Trace a ray outward
+          and count how many times it crosses the skin. Odd number, you were inside. Even, outside.
+        </p>
+
+        <p>
+          Now punch a hole in the skin. The ray slips straight through the gap without crossing
+          anything, and the count comes back wrong. Inside and outside bleed into each other. There is
+          no right answer to give, so the slicer either refuses the file or picks one and hopes.
+        </p>
+
+        <p>
+          When it hopes, you get the classic failures: walls that vanish for a few layers, infill
+          floating in mid-air, a solid model that prints as a paper-thin shell. An open edge is one of
+          the three defects that make a mesh non-manifold, and if that word turned up in your slicer's
+          warning too, we cover all three in the
+          <a href="/guides/fix-non-manifold-stl/">guide to fixing a non-manifold STL</a>.
+        </p>
+
+        <h2>Why holes appear in the first place</h2>
+
+        <p>
+          You did not necessarily do anything wrong. Holes are a byproduct of how meshes get made and
+          moved around.
+        </p>
+
+        <ul>
+          <li>
+            <strong>Export and conversion.</strong> Every hop between formats is a translation, and
+            translations lose things. A model that was watertight in its native format can come out of
+            an STL export with faces missing along a seam.
+          </li>
+          <li>
+            <strong>Boolean operations.</strong> Cutting one solid out of another has to rebuild the
+            surface along the intersection. When the maths lands on an awkward edge, the rebuild
+            leaves a gap.
+          </li>
+          <li>
+            <strong>Decimation.</strong> Reducing triangle count means collapsing edges. Collapse the
+            wrong one and the neighbouring faces no longer meet.
+          </li>
+          <li>
+            <strong>Scans and photogrammetry.</strong> A scanner only sees what it can see. The
+            underside where the object met the ground was never captured, so the mesh arrives with an
+            open bottom — usually the largest hole you will ever close.
+          </li>
+          <li>
+            <strong>AI generators.</strong> Text-to-3D tools are rewarded for output that
+            <em>renders</em> well, and a good render does not require a closed volume. Holes are
+            routine. That is the whole story of the
+            <a href="/guides/ai-generated-model-wont-print/">AI model that won't print</a>.
+          </li>
+        </ul>
+
+        <h2>How to fix holes in your browser — step by step</h2>
+
+        <p>
+          <a href="/">SliceReady</a> runs ADMesh compiled to WebAssembly, locally, on your own
+          machine. The file never leaves the browser, because there is no server for it to go to.
+        </p>
+
+        <ol class="steps">
+          <li>Open SliceReady and drop your STL or 3MF onto the page.</li>
+          <li>
+            The mesh is analysed and the open edges are counted, then highlighted on the model so you
+            can see where the surface is torn — including the gaps that are invisible at normal zoom.
+          </li>
+          <li>
+            The repair runs. It walks each boundary loop and stitches it shut, and you get a ledger in
+            plain language: exactly how many were closed, and what else was corrected along the way.
+          </li>
+          <li>Download the repaired STL and load it back into your slicer.</li>
+        </ol>
+
+        <div class="limit">
+          <p>
+            <strong>What it will not do, and will not pretend to do.</strong> SliceReady repairs
+            <em>topology</em>: open edges, flipped normals, degenerate triangles. It does not thicken
+            thin walls, hollow a model, remesh it, rescale it, or sculpt anything. Those change the
+            shape, and a tool that quietly changes your shape is a tool you cannot trust.
+          </p>
+          <p>
+            When a repair does not fully succeed, the report says so in as many words:
+            <em>"Partially fixed — this mesh is still not watertight."</em> A repair that failed does
+            not get to call itself repaired.
+          </p>
+        </div>
+
+        <h2>When a hole cannot be closed automatically</h2>
+
+        <p>Stitching works when there is a rim to stitch. Two cases break that assumption.</p>
+
+        <p>
+          The first is a <strong>genuinely missing region</strong>. If a scan lost an entire flank of
+          the object, no algorithm can recover what was never recorded. It can only span the gap,
+          which is right for an open-bottomed scan and quite wrong for a curved surface. The second is
+          a <strong>self-intersecting boundary</strong>, where the rim of the hole crosses itself.
+          There is no obvious way to close it, and a tool that picks one anyway is guessing on your
+          behalf.
+        </p>
+
+        <p>
+          In both cases the report says what is left open rather than declaring victory. That is when
+          the file goes to a desktop tool — Blender or similar — and you bridge the gap yourself,
+          because you are now deciding what the surface should be. That decision is yours.
+        </p>
+
+        <h2>Check it worked</h2>
+
+        <p>
+          Never take a repair tool's word for it, ours included. Load the repaired STL back into your
+          slicer and look for two things.
+        </p>
+
+        <ul>
+          <li>
+            <strong>The warning is gone.</strong> Cura, OrcaSlicer and Bambu Studio all tell you when
+            a model is not watertight or needs repair. Silence is the signal you want.
+          </li>
+          <li>
+            <strong>The layers hold up.</strong> Scrub the layer preview to roughly half the model's
+            height and read the cross-section. You want continuous, closed walls. Walls that vanish
+            for a few layers, or infill with nothing enclosing it, mean something is still open.
+          </li>
+        </ul>
+
+        <p>
+          Clean slice, no warning, solid walls in the preview. That is a watertight STL, and it is the
+          whole job.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>What does "not watertight" mean?</h3>
+          <p>
+            It means the surface does not fully enclose a volume. Somewhere in the mesh an edge is
+            used by one triangle instead of two, so there is a gap in the skin. "Not watertight", "has
+            holes" and "has open edges" are the same fault under three names. Fill the gaps and the
+            warning goes away.
+          </p>
+
+          <h3>Can Cura close holes in an STL?</h3>
+          <p>
+            Cura will often slice a model it has flagged as not watertight, but it is patching the gap
+            as it goes, not repairing your file. The STL on disk is still broken, and a model that
+            gets away with it at one layer height can fall apart at another. Fix the topology first.
+          </p>
+
+          <h3>How do I know if my STL has holes?</h3>
+          <p>
+            Not by looking — that is the trap. A renderer only draws the triangles facing the camera
+            and never asks whether they close, so a mesh full of holes can look flawless. You need a
+            count of open edges. Drop the file into <a href="/">SliceReady</a>: it counts them and
+            highlights them on the model before it changes anything.
+          </p>
+
+          <h3>Can holes be fixed without Blender?</h3>
+          <p>
+            Yes, and for most files Blender is overkill. Closing a boundary loop is mechanical
+            topology work that needs no modelling skill and no install. SliceReady does it in the
+            browser with WebAssembly, on your machine, nothing uploaded. Save Blender for the jobs that
+            change the shape.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Got an STL full of holes?</strong></p>
+          <p>
+            Drop it into SliceReady. Open edges get counted, highlighted and stitched shut in your
+            browser, nothing is uploaded, and the report tells you the truth about what was closed and
+            what was not.
+          </p>
+          <p><a class="button" href="/">Repair my STL &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
