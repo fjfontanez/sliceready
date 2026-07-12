@@ -102,9 +102,9 @@
           <span class="label">Short answer</span>
           <p>
             A Tripo model won't print because its mesh is not watertight — it has open edges, flipped
-            normals and stray fragments the renderer never showed you. Repair the topology, check the
-            thin parts, set the scale in your slicer. The repair takes seconds in a browser and needs
-            no modelling skill at all.
+            normals and degenerate triangles the renderer never showed you. Repair those three, check
+            the thin parts, set the scale in your slicer. The repair takes seconds in a browser and
+            needs no modelling skill at all.
           </p>
         </div>
 
@@ -209,7 +209,7 @@
               <tr>
                 <td>Floating fragments</td>
                 <td>Stray blobs, geometry inside the body</td>
-                <td>Topology — usually repairable</td>
+                <td><strong>Topology — but SliceReady does not remove them</strong></td>
               </tr>
               <tr>
                 <td>Thin walls (weapons, fingers, hair)</td>
@@ -259,10 +259,12 @@
 
         <div class="limit">
           <p>
-            <strong>What it will not do.</strong> SliceReady repairs <em>topology</em>: open edges,
-            flipped normals, degenerate triangles. It does not thicken thin walls, hollow the model,
-            remesh it, rescale it, or sculpt anything. Those change the shape you asked for — and a
-            tool that silently reshapes your model is a tool you cannot trust.
+            <strong>What it will not do.</strong> SliceReady repairs exactly three things, and names
+            each one: open edges, flipped normals, degenerate triangles. It does <em>not</em> remove
+            floating fragments — a stray blob sealed inside the torso comes back out with the model.
+            Nor does it thicken thin walls, hollow the model, remesh it, rescale it, or sculpt
+            anything. Those change the shape you asked for, and a tool that silently reshapes your
+            model is a tool you cannot trust.
           </p>
           <p>
             If damage survives the repair, the report says so in as many words:

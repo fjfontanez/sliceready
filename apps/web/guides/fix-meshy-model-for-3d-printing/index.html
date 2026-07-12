@@ -52,7 +52,7 @@
                 "name": "Can Meshy models be 3D printed?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes, but rarely straight from the export. A generated mesh is optimised to render correctly, not to enclose a watertight solid, so it commonly arrives with open edges, inconsistent normals, internal faces and stray fragments. Repair the topology first and most Meshy models print like any other model."
+                  "text": "Yes, but rarely straight from the export. A generated mesh is optimised to render correctly, not to enclose a watertight solid, so it commonly arrives with open edges, inconsistent normals and degenerate triangles. Repairing those three makes most Meshy models print like any other model. Internal faces and floating fragments are a separate problem that a topology repair does not remove."
                 }
               },
               {
@@ -103,8 +103,8 @@
           <p>
             A Meshy model won't print because the mesh was built to look right, not to enclose a
             solid. Convert it to a plain STL — the colour is dropped, the geometry stays — then
-            repair the topology: close the open edges, fix the flipped normals, remove the junk
-            triangles hiding inside the body. Then slice.
+            repair the topology: close the open edges, fix the flipped normals, drop the degenerate
+            triangles. Then slice.
           </p>
         </div>
 
@@ -214,7 +214,7 @@
               <tr>
                 <td>Internal faces and floating fragments</td>
                 <td>Stray geometry inside the body; warnings and odd infill</td>
-                <td>Topology — usually repairable</td>
+                <td><strong>Topology — but SliceReady does not remove them</strong></td>
               </tr>
               <tr>
                 <td>Degenerate triangles</td>
@@ -268,11 +268,14 @@
 
         <div class="limit">
           <p>
-            <strong>What it will not do.</strong> SliceReady repairs <em>topology</em> — open edges,
-            flipped normals, degenerate triangles — using ADMesh compiled to WebAssembly and running
-            locally in your browser. It does not thicken thin walls, hollow the model, remesh it,
-            rescale it, sculpt it, or handle colour and texture in any way. Those change the shape you
-            asked for, and a tool that silently reshapes your model is a tool you cannot trust.
+            <strong>What it will not do.</strong> SliceReady repairs exactly three things — open
+            edges, flipped normals, degenerate triangles — using ADMesh compiled to WebAssembly and
+            running locally in your browser. It does <em>not</em> remove the internal faces and
+            floating fragments described above: they survive the repair, and if they are what your
+            slicer is choking on, this tool will not save you. Nor does it thicken thin walls, hollow
+            the model, remesh it, rescale it, sculpt it, or handle colour and texture in any way.
+            Those change the shape you asked for, and a tool that silently reshapes your model is a
+            tool you cannot trust.
           </p>
           <p>
             If damage survives the repair, the report says so outright:
