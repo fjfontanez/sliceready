@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Best Meshmixer Alternative for STL Repair (Free)</title>
+    <meta
+      name="description"
+      content="Autodesk stopped developing Meshmixer. An honest look at the free alternatives for STL repair — what each claims, where each loses, and which to pick."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/meshmixer-alternative/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/meshmixer-alternative/" />
+    <meta property="og:title" content="The Best Meshmixer Alternative for STL Repair (Free)" />
+    <meta
+      property="og:description"
+      content="Meshmixer is discontinued. An honest comparison of what replaced it — including where our own tool comes off worse."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "Meshmixer is gone. Here is what to use instead.",
+            "description": "An honest comparison of the free tools that replaced Meshmixer for STL repair.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/meshmixer-alternative/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://sliceready.app/guides/" },
+              { "@type": "ListItem", "position": 3, "name": "Meshmixer alternative", "item": "https://sliceready.app/guides/meshmixer-alternative/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is Meshmixer discontinued?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Autodesk stopped developing Meshmixer years ago and has since removed it from its site. The application still runs, and for many people it still does the job, but it receives no updates and no support, and Autodesk points users toward Fusion 360 instead."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What is the best free Meshmixer alternative for repairing an STL?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It depends on the job. For automatic mesh repair alone, several free browser tools now do it without an install, including iamRapid, JustFixSTL and SliceReady. For sculpting, supports, hollowing and boolean work — the rest of what Meshmixer did — Blender or Fusion 360 are the realistic replacements."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I repair an STL without installing anything?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Several tools now run mesh repair in the browser. Some of them, including SliceReady, iamRapid and JustFixSTL, state that the file never leaves your device. Others process the file on their own servers, so check the tool's own claim before uploading a model you care about."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Meshmixer still safe to use?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It still runs, but it is unmaintained software that no longer receives security or compatibility updates, and it is not guaranteed to keep working on future operating systems. For one-off mesh repair a maintained tool is the safer choice; for the sculpting work it was loved for, the trade-off is yours to make."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <a href="/guides/">Guides</a>
+      </nav>
+
+      <article>
+        <h1>Meshmixer is gone. Here's what to use instead.</h1>
+        <p class="byline">Updated July 2026 · 6 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            Autodesk stopped developing Meshmixer and removed it from its site. If you only ever used
+            it to make a model manifold — which is what most people used it for — a browser tool now
+            does that job with no install. If you used it to sculpt, hollow or generate supports, your
+            replacement is Blender or Fusion 360, not a repair tool.
+          </p>
+        </div>
+
+        <div class="limit">
+          <p>
+            <strong>Read this before the table.</strong> SliceReady is our tool. So everything below
+            about the other tools is <em>what they say about themselves on their own pages</em>, as of
+            July 2026 — not our benchmark of them. We have not run a controlled comparison, and we are
+            not going to pretend we have.
+          </p>
+          <p>
+            You will notice the table is not flattering to us. That is the point. A comparison that
+            only makes its author look good is an advert with a table in it.
+          </p>
+        </div>
+
+        <h2>What actually happened to Meshmixer</h2>
+
+        <p>
+          Autodesk wound it down. Development stopped years before the announcement, the download was
+          pulled, and eventually the product pages came off the site altogether. Autodesk's own answer
+          to "what now?" is Fusion 360, which has absorbed some of the mesh tooling.
+        </p>
+
+        <p>
+          The application itself still runs, and plenty of people still keep a copy. But it is
+          unmaintained software: no updates, no fixes, no guarantee it survives the next OS release.
+          That is fine for an occasional job and a bad foundation for a workflow.
+        </p>
+
+        <p>
+          Worth knowing, because half the tutorials on the internet still point there: the old
+          <strong>Netfabb online repair service is dead too</strong>. If a guide sends you to a web
+          page to upload your STL to Netfabb, that guide is a fossil.
+        </p>
+
+        <h2>Be honest about what you actually used it for</h2>
+
+        <p>
+          Meshmixer was a big tool, and most people used a very small corner of it. The replacement
+          question only makes sense once you know which corner was yours.
+        </p>
+
+        <ul>
+          <li>
+            <strong>"Make it printable."</strong> Close the holes, fix the normals, get the slicer to
+            stop complaining — the
+            <a href="/guides/fix-non-manifold-stl/">non-manifold problem</a>, in other words. If this
+            was you, and for most people it was, you do not need a desktop application at all any more.
+          </li>
+          <li>
+            <strong>Sculpting, smoothing, boolean, hollowing, supports.</strong> Real modelling work.
+            No browser repair tool replaces this, ours included. Blender does, and it is free.
+          </li>
+        </ul>
+
+        <h2>The honest comparison</h2>
+
+        <p>
+          Repair tools that run in a browser, plus the desktop options, by what each one claims for
+          itself. Scroll it — the columns that matter are the last two.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Tool</th>
+                <th scope="col">Where it runs</th>
+                <th scope="col">Reads</th>
+                <th scope="col">Claims to fix</th>
+                <th scope="col">Source published?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>SliceReady</strong></td>
+                <td>Your browser. Nothing uploaded.</td>
+                <td>STL (binary), 3MF</td>
+                <td>Holes, flipped normals, degenerate triangles. <strong>That is all — no vertex welding, no fragment removal, no self-intersections.</strong></td>
+                <td><strong>Yes — GPL-2.0</strong></td>
+              </tr>
+              <tr>
+                <td>iamRapid</td>
+                <td>Your browser. Says nothing is uploaded.</td>
+                <td>STL (binary + ASCII), OBJ</td>
+                <td>Claims more than we do: holes, non-manifold edges, normals, degenerate faces, duplicate faces and vertices, self-intersections, disconnected shells</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>JustFixSTL</td>
+                <td>Your browser. Says files never leave your device.</td>
+                <td>STL, OBJ, OFF</td>
+                <td>Claims more than we do: non-manifold edges and vertices, holes, degenerate triangles, welding duplicate vertices, normals, isolated vertices</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>Remeshy</td>
+                <td><strong>Its servers — the file is uploaded</strong></td>
+                <td>STL, OBJ, FBX, GLB, GLTF, PLY</td>
+                <td>Non-manifold geometry, holes, normals, degenerate faces</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>SphereLinks</td>
+                <td>Your browser. Says no file is sent to a server.</td>
+                <td>STL</td>
+                <td>Duplicate vertices, degenerate faces, normals. <strong>Detects</strong> non-manifold edges and holes but does not auto-fix them</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>Meshmixer</td>
+                <td>Desktop install. Discontinued.</td>
+                <td>Many</td>
+                <td>Auto-repair, plus everything else it did</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>Blender</td>
+                <td>Desktop install.</td>
+                <td>Many</td>
+                <td>Everything — but you have to know how</td>
+                <td>Yes — GPL</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Where SliceReady loses</h2>
+
+        <p>
+          Look at the fourth column again. <strong>On raw repair capability, iamRapid and JustFixSTL
+          claim more than we do.</strong> They say they weld duplicate vertices; we do not do that.
+          iamRapid says it removes disconnected shells and resolves self-intersections; we do neither.
+          If your mesh's problem is a stray fragment sealed inside the body, or geometry that
+          intersects itself, our tool is not the one that helps you.
+        </p>
+
+        <p>
+          We also read fewer formats. No OBJ. Not even ASCII STL, today. Those are real gaps and they
+          are on our list — but a list is not a feature, so they belong in the "loses" column until
+          they ship.
+        </p>
+
+        <h2>Where SliceReady wins</h2>
+
+        <p>
+          Three things, and none of them is "it runs in the browser" — half this table runs in the
+          browser.
+        </p>
+
+        <ul>
+          <li>
+            <strong>It reads 3MF.</strong> Nothing else in this table does. If your slicer or your
+            printer hands you a 3MF, that matters.
+          </li>
+          <li>
+            <strong>The source is published, under the GPL.</strong> Every other browser tool here asks
+            you to believe its privacy claim. Ours you can read. When a tool's entire promise is "your
+            model never leaves your computer", being able to <em>check</em> that is not a detail.
+          </li>
+          <li>
+            <strong>It tells you when it failed.</strong> After a repair, you get a count of what
+            changed and what did not — and when the mesh is still broken, it says so:
+            <em>"Partially fixed — this mesh is still not watertight."</em> A repair tool that always
+            reports success is a repair tool that will waste your filament.
+          </li>
+        </ul>
+
+        <h2>So which one should you use?</h2>
+
+        <ul>
+          <li><strong>Holes, normals, or a 3MF — and you want to verify the privacy claim yourself:</strong> <a href="/">SliceReady</a>.</li>
+          <li><strong>Self-intersections, stray shells, or an OBJ:</strong> try iamRapid or JustFixSTL. They claim capabilities we do not have.</li>
+          <li><strong>You would rather not upload your model:</strong> avoid the tools that process on a server. Remeshy is explicit that it does.</li>
+          <li><strong>Sculpting, hollowing, supports, boolean:</strong> Blender. That was never a repair job.</li>
+        </ul>
+
+        <p>
+          Sending you elsewhere costs us nothing. Sending you to the wrong tool would cost you an
+          evening.
+        </p>
+
+        <p>
+          Not sure which fault you have? The
+          <a href="/guides/stl-wont-slice/">STL won't slice troubleshooting guide</a> triages the
+          symptom before it prescribes a tool — which is the right order, and the one every "best
+          tools" list skips.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>Is Meshmixer discontinued?</h3>
+          <p>
+            Yes. Autodesk stopped developing it years ago and removed it from its site. It still runs,
+            it just receives no updates and no support, and Autodesk points people at Fusion 360.
+          </p>
+
+          <h3>What is the best free Meshmixer alternative for repairing an STL?</h3>
+          <p>
+            For repair alone, a browser tool — <a href="/">SliceReady</a>, iamRapid or JustFixSTL —
+            does the job with no install. For the sculpting, hollowing and support work Meshmixer was
+            loved for, the honest answer is Blender or Fusion 360. No repair tool replaces that, and
+            anyone telling you otherwise is selling something.
+          </p>
+
+          <h3>Can I repair an STL without installing anything?</h3>
+          <p>
+            Yes. Several tools now run the repair in the browser. Check the tool's own claim about
+            where your file goes before you drop it in: some process locally, and at least one
+            processes on its own servers.
+          </p>
+
+          <h3>Is Meshmixer still safe to use?</h3>
+          <p>
+            It runs, but it is unmaintained — no security fixes, no compatibility updates, no promise
+            it survives your next OS upgrade. For a one-off repair, use something maintained. For
+            sculpting, that trade-off is yours to weigh.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Just need the mesh to slice?</strong></p>
+          <p>
+            Drop it into SliceReady. It repairs in your browser, nothing is uploaded, and the report
+            tells you the truth about what was fixed and what was not.
+          </p>
+          <p><a class="button" href="/">Repair my STL &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
