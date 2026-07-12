@@ -55,6 +55,17 @@ No `Co-Authored-By` or AI-attribution trailers.
 - Honor the honest-reporting rule: the tool never claims a repair it did not make.
 - New behavior needs a test.
 
+## Credits
+
+The issue-first workflow, the label taxonomy and the PR validation in
+[`.github/workflows/pr-check.yml`](.github/workflows/pr-check.yml) are derived from
+[Gentleman-Programming/gentle-ai](https://github.com/Gentleman-Programming/gentle-ai),
+used under the MIT license (Copyright © 2025 Gentleman Programming). SliceReady
+tightened the workflow's token permissions to least-privilege and retargeted the
+checks at this repository's own labels and review budget.
+
+Adopting a contribution workflow that already works beats inventing a worse one.
+
 ## License
 
 By contributing, you agree your contributions are licensed under

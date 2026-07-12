@@ -1,3 +1,6 @@
+<!-- Derived from Gentleman-Programming/gentle-ai, MIT (c) 2025 Gentleman Programming.
+     https://github.com/Gentleman-Programming/gentle-ai -->
+
 <!-- ⚠️ READ BEFORE SUBMITTING
   Every PR must be linked to an issue that has the "status:approved" label.
   PRs without a linked approved issue are automatically rejected by CI.
