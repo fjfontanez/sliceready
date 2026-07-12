@@ -52,7 +52,7 @@
                 "name": "Can you 3D print AI-generated models?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes, but almost never straight out of the generator. AI 3D models are optimised to look correct when rendered, not to enclose a watertight solid, so they commonly arrive with open edges, inconsistent normals and stray fragments. Repairing the mesh topology makes most of them printable in seconds."
+                  "text": "Yes, but almost never straight out of the generator. AI 3D models are optimised to look correct when rendered, not to enclose a watertight solid, so they commonly arrive with open edges, inconsistent normals and degenerate triangles. Repairing those three faults makes most generated models printable in seconds. Stray fragments and thin walls are separate problems that a topology repair does not touch."
                 }
               },
               {
@@ -103,8 +103,8 @@
           <p>
             AI-generated models won't print because the generator was optimising how the model
             <em>looks</em>, not whether it encloses a solid. The exported mesh renders perfectly and
-            is still full of open edges, inverted normals and stray fragments — so the slicer cannot
-            tell inside from outside. Repair the topology and most of them print.
+            is still full of open edges, inverted normals and degenerate triangles — so the slicer
+            cannot tell inside from outside. Repair those three and most generated models print.
           </p>
         </div>
 
@@ -203,7 +203,7 @@
               <tr>
                 <td>Floating fragments</td>
                 <td>Stray blobs, geometry inside the body</td>
-                <td>Topology — usually repairable</td>
+                <td><strong>Topology — but SliceReady does not remove them</strong></td>
               </tr>
               <tr>
                 <td>Thin walls (blades, fingers, capes)</td>
@@ -242,9 +242,11 @@
 
         <div class="limit">
           <p>
-            <strong>What it will not do.</strong> SliceReady repairs topology. It does not thicken
-            thin walls, hollow the model, remesh it, or rescale it. Those change the shape you asked
-            for — and a tool that silently reshapes your model is a tool you cannot trust.
+            <strong>What it will not do.</strong> SliceReady repairs three things and names them:
+            open edges, flipped normals, degenerate triangles. It does <em>not</em> remove floating
+            fragments or internal faces, and it does not thicken thin walls, hollow the model, remesh
+            it, or rescale it. Those last four change the shape you asked for — and a tool that
+            silently reshapes your model is a tool you cannot trust.
           </p>
           <p>
             If damage survives the repair, the report says so outright:
