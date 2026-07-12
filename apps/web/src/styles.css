@@ -112,6 +112,17 @@ body {
   text-wrap: balance;
 }
 
+/* The plain-prose statement of what the tool does and which slicers it feeds.
+   It exists for the reader who arrived from a search result and has not yet
+   decided to trust the dropzone — and, just as much, for the crawler that reads
+   this page with no JavaScript. */
+.lede-detail {
+  max-width: var(--measure);
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .privacy {
   display: flex;
   gap: 0.85rem;

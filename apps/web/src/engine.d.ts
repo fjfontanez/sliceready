@@ -14,3 +14,11 @@ declare module '@sliceready/engine/wasm/admesh.wasm?url' {
   const url: string;
   export default url;
 }
+
+// Vite's ?raw import returns the file's bytes as a string. Declared here because
+// tsc has no idea Vite does that, and index-html.test.ts reads the shipped HTML
+// rather than a DOM our own code built.
+declare module '*?raw' {
+  const contents: string;
+  export default contents;
+}

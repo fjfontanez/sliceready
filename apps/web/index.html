@@ -4,16 +4,67 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Repair broken STL and 3MF meshes so they slice and print — free, in your browser, with no upload and no account. Built for the models AI generators hand you half-finished." />
+    <link rel="canonical" href="https://sliceready.app/" />
     <meta name="theme-color" content="#0b0b0c" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sliceready.app/" />
     <meta property="og:title" content="SliceReady — fix broken meshes in your browser" />
     <meta property="og:description" content="Free, client-side STL/3MF repair. Your model never leaves your computer." />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- Inline data-URI favicon: a molten dot on the workshop ground. No external
          request, because the page promises nothing leaves the browser. -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
     <title>SliceReady — fix broken STL and 3MF meshes so they slice and print</title>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "SliceReady",
+        "url": "https://sliceready.app/",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any browser",
+        "description": "Repairs broken STL and 3MF meshes so they slice and print. Closes open edges, corrects flipped normals and removes degenerate triangles. Runs entirely in the browser with WebAssembly — the model is never uploaded.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "isAccessibleForFree": true,
+        "license": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
+      }
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- The hero and the footer are static HTML on purpose. They used to be built
+         by promo.ts at runtime, which left the initial document as an empty
+         <div id="app"> — a crawler, a text browser or a screen reader with no JS
+         saw a title and nothing else, on the site's single most valuable URL. The
+         interactive part (dropzone, viewer, report) still mounts from JavaScript;
+         only the prose that has to be readable without it lives here. -->
+    <div id="app">
+      <header class="hero">
+        <p class="eyebrow">Free · open source · nothing uploaded</p>
+        <h1 class="wordmark">Slice<span class="ready">Ready</span></h1>
+        <p class="lede">
+          Fix broken STL and 3MF meshes so they slice and print. Built for the models
+          AI generators hand you half-finished.
+        </p>
+        <p class="privacy">
+          <span class="tick">[✓]</span>
+          <span><strong>Everything runs in your browser.</strong> Your model never leaves your
+            computer — no upload, no account, no server.</span>
+        </p>
+        <p class="lede-detail">
+          Drop in an STL or 3MF. SliceReady closes open edges, corrects flipped normals and removes
+          degenerate triangles, then tells you exactly what it changed — and what it could not fix.
+          Take the repaired STL straight to Cura, OrcaSlicer, Bambu Studio or PrusaSlicer.
+        </p>
+      </header>
+
+      <footer>
+        <span>Built by the team behind
+          <a data-testid="slicemargin-cta" href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.</span>
+        <a data-testid="guides-link" href="/guides/">Guides — why your model won’t print</a>
+        <span class="foot-meta">NO UPLOAD · NO ACCOUNT · NO TRACKING</span>
+      </footer>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

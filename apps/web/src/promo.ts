@@ -1,47 +1,13 @@
 export const SLICEMARGIN_URL = 'https://slicemargin.com';
 
-export function renderPromo(root: HTMLElement): void {
-  const header = document.createElement('header');
-  header.className = 'hero';
-  header.innerHTML = `
-    <p class="eyebrow">Free · open source · nothing uploaded</p>
-    <h1 class="wordmark">Slice<span class="ready">Ready</span></h1>
-    <p class="lede">Fix broken STL and 3MF meshes so they slice and print. Built for the models
-      AI generators hand you half-finished.</p>
-    <p class="privacy">
-      <span class="tick">[✓]</span>
-      <span><strong>Everything runs in your browser.</strong> Your model never leaves your computer — no upload, no account, no server.</span>
-    </p>`;
-
-  const footer = document.createElement('footer');
-  // The footer is sober attribution, not a sales pitch. The pitch lives on the
-  // conversion moment — after a successful repair — where a maker who sells has
-  // just seen the tool prove itself. A neutral tool earns more links than a
-  // vendor's lead magnet, so the footer stays a credit line.
-  const attribution = document.createElement('span');
-  attribution.append('Built by the team behind ');
-  const cta = document.createElement('a');
-  cta.dataset.testid = 'slicemargin-cta';
-  cta.href = SLICEMARGIN_URL;
-  cta.target = '_blank';
-  cta.rel = 'noopener noreferrer';
-  cta.textContent = 'SliceMargin';
-  attribution.append(cta, '.');
-
-  // The guides are pre-rendered pages served outside the SPA bundle. Nothing
-  // else on this page points at them, so without this anchor a crawler that
-  // lands on the root never discovers /guides at all. It points at the index
-  // rather than at one guide: the index is what links to all of them, and a
-  // guide with no inbound link is a page search engines never reach.
-  const guides = document.createElement('a');
-  guides.dataset.testid = 'guides-link';
-  guides.href = '/guides/';
-  guides.textContent = 'Guides — why your model won’t print';
-
-  const meta = document.createElement('span');
-  meta.className = 'foot-meta';
-  meta.textContent = 'NO UPLOAD · NO ACCOUNT · NO TRACKING';
-
-  footer.append(attribution, guides, meta);
-  root.append(header, footer);
-}
+// The hero and the footer used to be built here at runtime. They are static markup
+// in index.html now, because rendering them from JavaScript left the initial
+// document as an empty <div id="app"> — a crawler, a text browser or a reader with
+// no JS got a <title> and nothing else, on the site's most valuable URL. Prose that
+// has to be readable without JavaScript belongs in the HTML, not in a render call.
+//
+// What stays here is the SliceMargin URL, which main.ts needs for the CTA it shows
+// after a successful repair. That one is deliberately NOT static: it belongs to the
+// conversion moment, shown to a maker who has just watched the tool prove itself,
+// and it should not exist on the page before then. The footer credit line is a
+// different thing — sober attribution, and it ships in the HTML.
