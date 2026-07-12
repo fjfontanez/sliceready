@@ -155,7 +155,9 @@ test('parse3mf throws on a <build><item> carrying a transform attribute', () => 
 
 test('parse3mf throws on a negative triangle index', () => {
   const negIdx = makeThreeMf(negativeTriangleIndexModelXml());
-  assert.throws(() => parse3mf(negIdx), /negative triangle index/);
+  // The guard now rejects negative AND non-integer indices in one predicate
+  // (Number.isInteger), so the message covers both: "malformed", not "negative".
+  assert.throws(() => parse3mf(negIdx), /malformed triangle index/);
 });
 
 test('parse3mf round-trips a realistic negative high-precision decimal coordinate', () => {
@@ -185,4 +187,102 @@ test('buildBinaryStl serializes an indexed mesh to the expected byte length', ()
   const stl = buildBinaryStl(mesh);
   const triCount = mesh.triVerts.length / 3;
   assert.equal(stl.length, 84 + 50 * triCount);
+});
+
+// ---------------------------------------------------------------------------
+// Units. A 3MF declares its unit on <model>; STL has none and every slicer
+// reads it as millimetres. Ignoring the attribute meant a 3MF authored in
+// inches passed its raw coordinates straight through to the STL, and the model
+// came out 25.4x too small — silently, which is the one thing this project does
+// not do.
+// ---------------------------------------------------------------------------
+
+function tetraModelXmlWithUnit(unit) {
+  const attr = unit === null ? '' : ` unit="${unit}"`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<model${attr} xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources>
+    ${objectXml(1, TETRA_VERTICES, TETRA_TRIANGLES)}
+  </resources>
+  <build><item objectid="1" /></build>
+</model>`;
+}
+
+const zipWithUnit = (unit) =>
+  zipSync({ '3D/3dmodel.model': strToU8(tetraModelXmlWithUnit(unit)) });
+
+test('parse3mf converts inches to millimetres', () => {
+  const { vertProperties } = parse3mf(zipWithUnit('inch'));
+  // TETRA_VERTICES[1] is [1, 0, 0]: one inch along x is 25.4 mm.
+  assert.ok(Math.abs(vertProperties[3] - 25.4) < 1e-4, `expected 25.4, got ${vertProperties[3]}`);
+});
+
+test('parse3mf converts centimetres, metres and microns', () => {
+  assert.ok(Math.abs(parse3mf(zipWithUnit('centimeter')).vertProperties[3] - 10) < 1e-4);
+  assert.ok(Math.abs(parse3mf(zipWithUnit('meter')).vertProperties[3] - 1000) < 1e-3);
+  assert.ok(Math.abs(parse3mf(zipWithUnit('micron')).vertProperties[3] - 0.001) < 1e-9);
+});
+
+test('parse3mf leaves millimetres untouched', () => {
+  assert.equal(parse3mf(zipWithUnit('millimeter')).vertProperties[3], 1);
+});
+
+test('parse3mf defaults to millimetres when the unit is absent', () => {
+  assert.equal(parse3mf(zipWithUnit(null)).vertProperties[3], 1);
+});
+
+test('parse3mf rejects a unit it does not know rather than guessing', () => {
+  assert.throws(() => parse3mf(zipWithUnit('furlong')), /unit/i);
+});
+
+// XML permits single-quoted attribute values, and every other attribute regex in
+// mesh3mf.mjs accepts both. The unit regex initially did not — so `unit='inch'`
+// fell through to the millimetre default and printed 25.4x too small, silently:
+// the exact failure the unit fix exists to prevent.
+test('parse3mf reads a single-quoted unit attribute', () => {
+  const xml = tetraModelXmlWithUnit('inch').replace('unit="inch"', "unit='inch'");
+  const zip = zipSync({ '3D/3dmodel.model': strToU8(xml) });
+  const { vertProperties } = parse3mf(zip);
+  assert.ok(Math.abs(vertProperties[3] - 25.4) < 1e-4, `expected 25.4, got ${vertProperties[3]}`);
+});
+
+// The multi-mesh guard deliberately allows a <components> assembly (an outer
+// object with no <mesh> referencing an inner one that owns the real mesh). But a
+// <component> carries its own transform, and an unapplied transform means wrong
+// absolute geometry — a reflection would even flip signedVolume. The <build><item>
+// guard never saw these, so the one assembly shape we allow was the one shape that
+// could smuggle a transform past us.
+test('parse3mf refuses a <component> that carries a transform', () => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources>
+    ${objectXml(1, TETRA_VERTICES, TETRA_TRIANGLES)}
+    <object id="2" type="model">
+      <components><component objectid="1" transform="1 0 0 0 1 0 0 0 1 5 0 0" /></components>
+    </object>
+  </resources>
+  <build><item objectid="2" /></build>
+</model>`;
+  const zip = zipSync({ '3D/3dmodel.model': strToU8(xml) });
+  assert.throws(() => parse3mf(zip), /transform/i);
+});
+
+// parseInt('abc') is NaN. NaN < 0 is false and NaN > maxIndex is false, so a
+// malformed index sailed past BOTH guards and Uint32Array.from silently turned it
+// into 0 — a triangle quietly rewired to the wrong vertex.
+test('parse3mf refuses a non-numeric triangle index instead of turning it into 0', () => {
+  const xml = tetraModelXml().replace('v1="0"', 'v1="abc"');
+  const zip = zipSync({ '3D/3dmodel.model': strToU8(xml) });
+  assert.throws(() => parse3mf(zip), /index/i);
+});
+
+// A plain-object lookup walks the prototype chain, so `unit="constructor"` would
+// resolve to the Object function and `unit="__proto__"` to Object.prototype —
+// both non-undefined, both slipping past the unknown-unit throw, and both ending
+// up multiplied into a coordinate as NaN. The error would then name the vertex,
+// not the unit. Pinning this so nobody quietly turns the Map back into a literal.
+test('parse3mf refuses prototype-chain keys as units, and names the unit', () => {
+  for (const evil of ['constructor', '__proto__', 'toString', 'valueOf']) {
+    assert.throws(() => parse3mf(zipWithUnit(evil)), /unit/i, `expected "${evil}" to be refused as a unit`);
+  }
 });

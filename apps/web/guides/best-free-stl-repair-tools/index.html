@@ -104,8 +104,9 @@
           <p>
             There is no single best STL repair tool, because they do not all repair the same things.
             Holes and flipped normals: any free browser repairer will do. Self-intersections or stray
-            disconnected shells: you need one that specifically claims them. Thin walls: no repair tool
-            on this list helps you, and any that says otherwise is lying.
+            disconnected shells: you need one that specifically claims them. Thin walls: no mesh repair on this
+            list can help, because thickening a wall means changing the geometry — that is modelling
+            work, not repair.
           </p>
         </div>
 
@@ -164,7 +165,7 @@
               </tr>
               <tr>
                 <td><strong>Thin walls</strong></td>
-                <td><strong>No. Not one. This needs modelling.</strong></td>
+                <td><strong>No — not by repairing. Thickening changes the geometry: that is a modelling job (Blender's Solidify, for instance), or a slicer setting for thin features.</strong></td>
               </tr>
               <tr>
                 <td><strong>Wrong scale or units</strong></td>
@@ -297,7 +298,7 @@
             learning curve is real. So is the capability.
           </li>
           <li>
-            <strong>Meshmixer</strong> — discontinued by Autodesk, still runs, no longer maintained.
+            <strong>Meshmixer</strong> — legacy: no longer developed or supported, but still listed and still downloadable.
             <a href="/guides/meshmixer-alternative/">What to use instead, and why</a>.
           </li>
           <li>

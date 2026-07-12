@@ -68,15 +68,15 @@
                 "name": "What is the difference between non-manifold and not watertight?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Not watertight means the surface has holes: at least one edge is used by only one triangle. Non-manifold is the wider fault and includes holes, edges shared by more than two triangles, and inconsistent normals. Every mesh that is not watertight is non-manifold, but a fully closed mesh can still be non-manifold."
+                  "text": "Not watertight means the surface has holes: at least one edge belongs to only one triangle, so the surface has a boundary and does not enclose a volume. Strictly, an edge shared by three or more triangles is the non-manifold fault proper. 3D-printing software tends to file both under \"non-manifold\", because both stop the model being a printable solid — but they are different defects, and the second one is much harder to repair automatically."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Can a non-manifold STL be fixed without Blender?",
+                "name": "Why do AI-generated models come out non-manifold so often?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes. Closing open edges, correcting flipped normals and removing degenerate triangles are mechanical operations that need no modelling skill and no desktop install. Browser tools such as SliceReady run that repair locally with WebAssembly. Blender is only required for work that changes the shape, such as thickening thin walls or remeshing."
+                  "text": "Because image-to-3D systems are trained against visual objectives: the reward is that the renders match the prompt, and watertightness is never in the loss function. Printability, where it exists, comes from a separate pass added afterwards — Tripo and Meshy both offer one now — so a mesh that skipped that pass is finished to the eye and broken to the slicer."
                 }
               }
             ]
@@ -294,6 +294,54 @@
           harder faults — branching edges or self-intersecting geometry — and needs a desktop tool.
         </p>
 
+        <h2>If you dropped in a 3MF: what survives, and what does not</h2>
+
+        <p>
+          A 3MF is a far richer container than an STL. It can carry units, several objects, placement
+          transforms, materials and colour. An STL carries triangles and nothing else. So the trip
+          from one to the other discards things, and you deserve to know exactly which.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">In your 3MF</th>
+                <th scope="col">What SliceReady does with it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Geometry</td>
+                <td>Repaired, and returned as STL</td>
+              </tr>
+              <tr>
+                <td>Units (mm, inch, micron…)</td>
+                <td><strong>Read, and converted to millimetres</strong> — which is what every slicer assumes an STL to be. A unit it does not recognise is refused rather than guessed at</td>
+              </tr>
+              <tr>
+                <td>Colour, texture, materials</td>
+                <td>Discarded. STL cannot store them</td>
+              </tr>
+              <tr>
+                <td>More than one object</td>
+                <td><strong>Refused, with an error.</strong> Merging them would corrupt the triangle indices, so the file is rejected rather than quietly mangled. Export a single object</td>
+              </tr>
+              <tr>
+                <td>Placement transforms on build items</td>
+                <td><strong>Refused, with an error.</strong> The transform is not applied, and handing back geometry at the wrong position without saying so would be worse than saying no</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          The pattern is deliberate, and it is the same rule that governs the repair itself:
+          <strong>where the tool cannot do the right thing, it refuses — it does not do the wrong
+          thing quietly.</strong> A model handed back at the wrong scale, or with an object silently
+          dropped, looks entirely plausible right up until it costs you a print.
+        </p>
+
         <h2>When a browser repair isn't enough</h2>
 
         <p>
@@ -324,7 +372,7 @@
             Repair the topology first and the guessing stops.
           </p>
 
-          <h3>Does it matter if the model looks fine?</h3>
+          <h3>Does non-manifold geometry matter if the model looks fine?</h3>
           <p>
             Yes, and this trips up almost everyone. A renderer draws only the surface facing the
             camera and never asks what is inside it, so holes and inverted normals are invisible on
@@ -333,10 +381,14 @@
 
           <h3>What is the difference between non-manifold and not watertight?</h3>
           <p>
-            "Not watertight" means the surface has holes. "Non-manifold" is the broader fault and
-            covers holes, edges shared by more than two triangles, and inconsistent normals. Every
-            mesh that is not watertight is non-manifold — but a mesh can be fully closed and still be
-            non-manifold.
+            They are not the same defect, though slicers habitually file both under the same warning.
+            <strong>Not watertight</strong> means the surface has a hole: an edge belonging to one
+            triangle instead of two, so the surface has a <em>boundary</em> and encloses nothing.
+            <strong>Non-manifold</strong> proper means an edge shared by three or more triangles —
+            the surface branches, and "inside" forks. A printing tool groups them because both stop
+            the model being a solid. A topology library would not, and the distinction matters to you
+            for one practical reason: holes are the easy repair, and branching edges are the hard
+            one.
           </p>
 
           <h3>Why do AI-generated models come out non-manifold so often?</h3>

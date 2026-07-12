@@ -8,8 +8,9 @@ import { unzipSync, strFromU8 } from 'fflate';
 // non-manifold defect is genuine topology, not an unwelded-vertex artifact.
 //
 // Memory note: this loads the decompressed model part (~155MB for the real
-// Tripo fixture) as one string and performs a single-pass, full in-memory
-// regex scan — no DOM tree is built. The intermediate JS number arrays
+// Tripo fixture) as one string and scans it with regexes — no DOM tree is ever
+// built. It walks that string several times, cheaply; the win is the absence of
+// a parse tree, not a single pass. The intermediate JS number arrays
 // (vertCoords/triIndices, built via push) roughly double peak memory versus
 // the final typed arrays they get converted into. Acceptable for the spike
 // (and consistent with the spec's soft size-cap idea); if Node runs short on
@@ -36,6 +37,47 @@ const Z_ATTR_RE = /\bz\s*=\s*["']([^"']*)["']/;
 const V1_ATTR_RE = /\bv1\s*=\s*["']([^"']*)["']/;
 const V2_ATTR_RE = /\bv2\s*=\s*["']([^"']*)["']/;
 const V3_ATTR_RE = /\bv3\s*=\s*["']([^"']*)["']/;
+
+// The units 3MF permits on <model>, in millimetres — the unit STL is read as.
+//
+// A Map, not an object literal, and that is not stylistic. A plain-object lookup
+// walks the prototype chain, so `unit="constructor"` would resolve to the Object
+// function and `unit="__proto__"` to Object.prototype — both non-undefined, both
+// slipping past the "unknown unit" throw below, and both ending up multiplied
+// into a coordinate as NaN. The file would then fail with "malformed vertex
+// coordinate" when its actual defect is the unit attribute: an honest error, in
+// the wrong place. A Map has no such keys to inherit.
+const MM_PER_UNIT = new Map([
+  ['micron', 0.001],
+  ['millimeter', 1],
+  ['centimeter', 10],
+  ['inch', 25.4],
+  ['foot', 304.8],
+  ['meter', 1000],
+]);
+
+// Absent, the 3MF specification's default is the millimetre. An unknown unit is
+// REJECTED rather than assumed: guessing a scale is how a model silently prints
+// at the wrong size, and a wrong size that looks plausible is worse than an
+// error that stops you.
+function millimetresPerUnit(xml) {
+  const model = /<model\b([^>]*)>/.exec(xml);
+  // Both quote styles, like every sibling attribute regex above. XML permits
+  // single quotes, and a `unit='inch'` this regex failed to see would fall
+  // through to the millimetre default and print 25.4x too small — the exact
+  // silent-wrong-scale failure this function exists to prevent.
+  const unit = model && /\bunit\s*=\s*["']([^"']*)["']/.exec(model[1]);
+  if (!unit) return 1;
+  const key = unit[1].trim().toLowerCase();
+  const mm = MM_PER_UNIT.get(key);
+  if (mm === undefined) {
+    throw new Error(
+      `3MF declares an unrecognised unit "${unit[1]}" — refusing to guess a scale. ` +
+        `Known units: ${[...MM_PER_UNIT.keys()].join(', ')}.`,
+    );
+  }
+  return mm;
+}
 
 export function parse3mf(zipBytes) {
   // Only decompress the model part — other zip entries (thumbnails, other OPC
@@ -89,6 +131,25 @@ export function parse3mf(zipBytes) {
     }
   }
 
+  // The SAME guard for <component>, and it is not redundant. The mesh-count check
+  // above deliberately tolerates a <components> assembly — an outer object with no
+  // <mesh> of its own referencing an inner one that owns the single real mesh — so
+  // that a legitimate single-mesh file is not misread as multi-object. But a
+  // <component> carries its own transform attribute, which means the one assembly
+  // shape we allow is precisely the shape that can smuggle an unapplied transform
+  // past the <build><item> guard: wrong absolute geometry, and a reflection would
+  // flip signedVolume. Refuse it on the same terms, rather than let the exception
+  // swallow the rule.
+  const componentRe = /<component\b[^>]*>/g;
+  let cm;
+  while ((cm = componentRe.exec(xml)) !== null) {
+    if (/\btransform\s*=/.test(cm[0])) {
+      throw new Error(
+        'parse3mf: <component> transforms not supported by this spike — export the model pre-baked at identity',
+      );
+    }
+  }
+
   // Derived from the SAME word-boundary pattern as the meshCount regex above
   // (not a bare `indexOf('<mesh')`) so the two agree — a `<meshgroup>`-style
   // element preceding the real <mesh> would otherwise make the slice start
@@ -103,14 +164,22 @@ export function parse3mf(zipBytes) {
   if (meshEnd === -1) {
     throw new Error('3MF model part has no <mesh> element');
   }
+
+  // A 3MF states its unit on <model>. STL states nothing, and every slicer reads
+  // an STL as millimetres — so a 3MF authored in inches, passed through with its
+  // coordinates untouched, prints 25.4x too small. Silently. Reading the
+  // attribute and scaling to millimetres is the whole fix; ignoring it was the
+  // one failure mode this project refuses to have.
+  const scale = millimetresPerUnit(xml);
   // Scope the vertex/triangle scans to this single <mesh>...</mesh> span, not
   // the whole model part — belt-and-suspenders with the multi-mesh guard
   // above, and keeps the regex scans tight to the geometry they own.
   const meshXml = xml.slice(meshStart, meshEnd + meshCloseTag.length);
 
   // Extract by attribute NAME (x/y/z and v1/v2/v3 may appear in any order),
-  // never by position. A single-pass, full in-memory regex scan over the mesh
-  // span keeps memory to one pass rather than building a DOM tree.
+  // never by position. Regex scans over the mesh span rather than a DOM tree:
+  // the point is that no parse tree is ever materialised, not that the file is
+  // read once — it is walked several times, cheaply.
   const vertCoords = [];
   const vertexRe = /<vertex\b([^>]*)>/g;
   let vm;
@@ -124,7 +193,17 @@ export function parse3mf(zipBytes) {
     if (!x || !y || !z) {
       throw new Error('3MF <vertex> is missing an x/y/z attribute');
     }
-    vertCoords.push(parseFloat(x[1]), parseFloat(y[1]), parseFloat(z[1]));
+    const px = parseFloat(x[1]);
+    const py = parseFloat(y[1]);
+    const pz = parseFloat(z[1]);
+    // Same trap as the triangle indices: parseFloat('abc') is NaN, and NaN fails
+    // every comparison silently. A NaN coordinate would flow into the bounding
+    // box, the tolerance, the repair and the STL, poisoning all of them without
+    // ever raising anything. Catch it at the only place it can still be named.
+    if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pz)) {
+      throw new Error(`parse3mf: malformed vertex coordinate (x="${x[1]}", y="${y[1]}", z="${z[1]}")`);
+    }
+    vertCoords.push(px * scale, py * scale, pz * scale);
   }
   if (!sawVertices) {
     throw new Error('3MF mesh has no <vertex> elements');
@@ -146,13 +225,24 @@ export function parse3mf(zipBytes) {
     const i1 = parseInt(v1[1], 10);
     const i2 = parseInt(v2[1], 10);
     const i3 = parseInt(v3[1], 10);
-    // Reject negative indices inline, during the loop, rather than only
-    // tracking a max: a negative index (e.g. v1="-1") would never exceed
-    // maxIndex, so the upper-bound check alone lets it through — and
-    // Uint32Array.from later wraps -1 to 4294967295, silently propagating
-    // NaN downstream instead of throwing here.
-    if (i1 < 0 || i2 < 0 || i3 < 0) {
-      throw new Error(`parse3mf: negative triangle index (v1=${i1}, v2=${i2}, v3=${i3})`);
+    // Both clauses are needed; neither subsumes the other.
+    //
+    // `< 0` catches a negative index (v1="-1"). It has to be checked here rather
+    // than by the upper-bound check at the end, because a negative never exceeds
+    // maxIndex — and Uint32Array.from would wrap it to 4294967295.
+    //
+    // `Number.isInteger` catches NaN, which `< 0` cannot: parseInt('abc') is NaN,
+    // and `NaN < 0` is false, and `NaN > maxIndex` is false too. A malformed index
+    // therefore sailed past BOTH range guards and Uint32Array.from turned it into
+    // 0 — a triangle silently rewired to vertex zero, in a file the parser called
+    // valid.
+    //
+    // isInteger alone will not do the job either: Number.isInteger(-1) is true.
+    if (!Number.isInteger(i1) || !Number.isInteger(i2) || !Number.isInteger(i3) ||
+        i1 < 0 || i2 < 0 || i3 < 0) {
+      throw new Error(
+        `parse3mf: malformed triangle index (v1="${v1[1]}", v2="${v2[1]}", v3="${v3[1]}")`,
+      );
     }
     if (i1 > maxIndex) maxIndex = i1;
     if (i2 > maxIndex) maxIndex = i2;
