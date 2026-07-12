@@ -30,13 +30,16 @@ describe('the shipped index.html', () => {
     expect(text).toMatch(/browser/i);
   });
 
-  // The honesty rule reaches the shop window too: the home page names the three
-  // faults the engine actually repairs, and no others.
-  it('names only the repairs the engine actually performs', () => {
+  // The honesty rule reaches the shop window too. The home page names the three
+  // faults the engine actually repairs — and names the ones it does not, rather
+  // than leaving the reader to assume. Asserting the DISCLAIMER, not the absence
+  // of the words: an earlier version of this test banned "thin wall" outright,
+  // which would have failed the page for being more honest, not less.
+  it('names the three repairs it performs, and disclaims the ones it does not', () => {
     expect(text).toMatch(/open edges/i);
     expect(text).toMatch(/normals/i);
     expect(text).toMatch(/degenerate triangles/i);
-    expect(text).not.toMatch(/thin wall|hollow|remesh|self-intersect/i);
+    expect(text).toMatch(/does not thicken thin walls, hollow, remesh or rescale/i);
   });
 
   it('links to the guides so a crawler can reach them from the root', () => {
@@ -50,5 +53,34 @@ describe('the shipped index.html', () => {
     expect(cta).not.toBeNull();
     expect(cta!.getAttribute('href')).toContain(SLICEMARGIN_URL);
     expect(cta!.getAttribute('rel')).toContain('noopener');
+  });
+
+  // "so they slice and print" promised an outcome the tool does not control.
+  // Slicing cleanly is ours to deliver. Whether it PRINTS depends on wall
+  // thickness, orientation, supports and slicer settings — none of which this
+  // tool touches. Promise the part we own.
+  it('does not promise a successful print, only a clean slice', () => {
+    const desc = doc.querySelector('meta[name=description]')?.getAttribute('content') ?? '';
+    const claims = `${doc.title} ${desc} ${text}`;
+    expect(claims).not.toMatch(/slice and print|print-ready|ready to print/i);
+  });
+
+  // The open-source claim is the differentiator the comparison guides lean on
+  // hardest — "every other browser tool asks you to believe its privacy claim;
+  // ours you can read". A claim nobody can check is just a better-sounding
+  // promise. The link is what turns it into a fact.
+  it('links to the source, so the open-source claim can be checked', () => {
+    const repo = doc.querySelector<HTMLAnchorElement>('a[data-testid="source-link"]');
+    expect(repo).not.toBeNull();
+    expect(repo!.getAttribute('href')).toContain('github.com/fjfontanez/sliceready');
+    expect(repo!.getAttribute('rel')).toContain('noopener');
+  });
+
+  // A 3MF can carry colour, materials and several objects. What comes back is a
+  // repaired STL, which carries none of them. Say so where the file is dropped,
+  // not three clicks away inside a guide.
+  it('states what goes in and what comes out', () => {
+    expect(text).toMatch(/STL or 3MF/i);
+    expect(text).toMatch(/repaired STL/i);
   });
 });
