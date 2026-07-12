@@ -1,5 +1,4 @@
-<!-- Derived from Gentleman-Programming/gentle-ai, MIT (c) 2025 Gentleman Programming.
-     https://github.com/Gentleman-Programming/gentle-ai -->
+<!-- Adapted from Gentleman-Programming/gentle-ai under MIT. See THIRD_PARTY_NOTICES.md. -->
 
 <!-- ⚠️ READ BEFORE SUBMITTING
   Every PR must be linked to an issue that has the "status:approved" label.

@@ -1,3 +1,5 @@
+# Adapted from Gentleman-Programming/gentle-ai under MIT. See THIRD_PARTY_NOTICES.md.
+
 name: Feature Request
 description: Suggest a feature or enhancement for SliceReady
 labels: ["enhancement", "status:needs-review"]
