@@ -16,4 +16,14 @@ describe('renderPromo', () => {
     expect(cta!.href).toContain(SLICEMARGIN_URL);
     expect(cta!.rel).toContain('noopener');
   });
+
+  // The guides are static pages outside the SPA. This link is the only path a
+  // crawler has from the app to them, so it is a ranking dependency, not decor.
+  it('links to the guides so crawlers can reach them', () => {
+    const root = document.createElement('div');
+    renderPromo(root);
+    const link = root.querySelector<HTMLAnchorElement>('a[data-testid="guides-link"]');
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute('href')).toBe('/guides/fix-non-manifold-stl/');
+  });
 });
