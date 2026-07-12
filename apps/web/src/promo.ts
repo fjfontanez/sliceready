@@ -30,11 +30,13 @@ export function renderPromo(root: HTMLElement): void {
 
   // The guides are pre-rendered pages served outside the SPA bundle. Nothing
   // else on this page points at them, so without this anchor a crawler that
-  // lands on the root never discovers /guides at all.
+  // lands on the root never discovers /guides at all. It points at the index
+  // rather than at one guide: the index is what links to all of them, and a
+  // guide with no inbound link is a page search engines never reach.
   const guides = document.createElement('a');
   guides.dataset.testid = 'guides-link';
-  guides.href = '/guides/fix-non-manifold-stl/';
-  guides.textContent = 'Why your STL won’t slice';
+  guides.href = '/guides/';
+  guides.textContent = 'Guides — why your model won’t print';
 
   const meta = document.createElement('span');
   meta.className = 'foot-meta';
