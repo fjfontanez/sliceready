@@ -6,7 +6,7 @@
     <title>How to Fix a Meshy Model for 3D Printing (Free, In-Browser)</title>
     <meta
       name="description"
-      content="Your Meshy model looks finished but won't slice. Here's what breaks inside the mesh, why STL drops the texture, and how to repair it free in your browser."
+      content="Run Meshy's printability check and remesh — then verify. A check the platform ran is a claim, not a verification of your file. Free, in your browser, nothing uploaded."
     />
     <link rel="canonical" href="https://sliceready.app/guides/fix-meshy-model-for-3d-printing/" />
     <meta name="theme-color" content="#0b0b0c" />
@@ -16,7 +16,7 @@
     <meta property="og:title" content="How to Fix a Meshy Model for 3D Printing (Free, In-Browser)" />
     <meta
       property="og:description"
-      content="A textured export is not a printable solid. Here is what hides inside a Meshy mesh, what STL throws away, and how to repair the geometry without uploading anything."
+      content="Meshy has print tools now. Use them — then verify the mesh, because a vendor check is not a check on your file. Nothing uploaded."
     />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -52,7 +52,7 @@
                 "name": "Can Meshy models be 3D printed?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes, but rarely straight from the export. A generated mesh is optimised to render correctly, not to enclose a watertight solid, so it commonly arrives with open edges, inconsistent normals and degenerate triangles. Repairing those three makes most Meshy models print like any other model. Internal faces and floating fragments are a separate problem that a topology repair does not remove."
+                  "text": "Yes. Meshy documents a 3D-printing workflow including a printability check that it says repairs non-manifold edges, holes and degenerate faces, plus a remesh step — run those first. A mesh exported without them commonly arrives with open edges, inconsistent normals and degenerate triangles. Verify the mesh either way: a printability check the platform ran is a claim about its output, not a verification of your downloaded file."
                 }
               },
               {
@@ -60,7 +60,7 @@
                 "name": "Why won't my Meshy model slice?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Because the mesh is almost certainly not manifold. A slicer must decide, for every point on every layer, whether that point is inside the solid or outside it, and that question has no answer when the surface has holes, inverted normals, or extra faces buried inside the body."
+                  "text": "Most often because it did not go through Meshy's printability check and remesh, so the mesh is not manifold. A slicer must decide, for every point on every layer, whether that point is inside the solid, and that question has no answer when the surface has holes, inverted normals, or extra faces buried inside the body. Run Meshy's print tools, then verify the mesh independently."
                 }
               },
               {
@@ -101,10 +101,10 @@
         <div class="answer">
           <span class="label">Short answer</span>
           <p>
-            A Meshy model won't print because the mesh was built to look right, not to enclose a
-            solid. Convert it to a plain STL — the colour is dropped, the geometry stays — then
-            repair the topology: close the open edges, fix the flipped normals, drop the degenerate
-            triangles. Then slice.
+            Run Meshy's own printability check and remesh first — it says it repairs non-manifold
+            edges, holes and degenerate faces. Then verify the result, because that is Meshy's claim
+            about its output, not a check on your file. Export STL for a single colour, 3MF to keep
+            colour. Confirm the mesh before you print.
           </p>
         </div>
 
@@ -116,11 +116,12 @@
         </p>
 
         <p>
-          Nothing malfunctioned. The mesh you are holding is exactly what the system was built to
-          produce — and being printable was never part of that job.
+          Nothing malfunctioned, and — worth saying, because an earlier version of this guide did
+          not — Meshy has since built print tools of its own. The question is whether they ran on the
+          file you are holding, and whether anyone checked.
         </p>
 
-        <h2>The model is finished to the eye and broken to the slicer</h2>
+        <h2>A render and a slice ask different questions</h2>
 
         <p>
           A renderer and a slicer ask a 3D file two very different questions, and only one of them is
@@ -241,18 +242,43 @@
           the shape being wrong. Scale is a slider in your slicer.
         </p>
 
-        <h2>Step by step: Meshy export to printable STL</h2>
+        <h2>Use Meshy's own print tools first</h2>
 
         <p>
-          <a href="/">SliceReady</a> runs the repair on your machine with WebAssembly. The file is
-          never uploaded — there is no server to upload it to.
+          Meshy documents a 3D-printing workflow, and you should use it before you use anything else.
+          As of July 2026 it describes a <strong>built-in printability check</strong> that it says
+          detects and repairs non-manifold edges, degenerate faces, holes and open boundaries, plus a
+          <strong>remesh</strong> step. If the platform that made the mesh offers to fix the mesh,
+          start there. Repairing a wreck downstream is the long way round.
+        </p>
+
+        <p>
+          It also gives you a real format decision, and this is where its own documentation is worth
+          reading twice: <strong>STL carries no colour at all</strong>, so it is the single-colour
+          route. <strong>3MF is the one that keeps colour</strong>, for multi-material and colour
+          printing. Meshy's own docs note that 3MF colour mapping can come out wrong in the slicer and
+          tell you to check it there. So pick the format for the print you actually want — and if
+          colour matters, do not export STL and wonder where it went.
+        </p>
+
+        <h2>Then verify — because a check that ran is not a check on your file</h2>
+
+        <p>
+          Meshy's printability check is Meshy's statement about its own output. It may well be right.
+          But it is not a verification of the file sitting in your downloads folder, and you may not
+          have run it at all — plenty of models come out of the default flow, or the API, or from
+          someone else entirely.
+        </p>
+
+        <p>
+          <a href="/">SliceReady</a> is the second opinion, and it runs on your machine with
+          WebAssembly. The file is never uploaded — there is no server to upload it to.
         </p>
 
         <ol class="steps">
           <li>
-            Export or convert your model to STL or 3MF. The colour is discarded — that is expected. If
-            your generator offers a remesh or print-oriented export, take it: it usually reduces the
-            damage, but verify in your slicer anyway.
+            Run Meshy's printability check and remesh if you have not. Then export: STL for a
+            single-colour print, 3MF if you need the colour.
           </li>
           <li>Drop the file onto SliceReady.</li>
           <li>

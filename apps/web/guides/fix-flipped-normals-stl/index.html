@@ -131,16 +131,25 @@
         </p>
 
         <p>
-          And it is not stored independently — it is derived from the <strong>winding order</strong>
-          of the triangle's three vertices. List them counter-clockwise as seen from outside and the
-          normal points outward. List those same three vertices in the opposite order and the normal
-          points inward. Same points in space, same shape, opposite meaning. That is all a flipped
-          triangle is: a face wound backwards, claiming that outside is inside.
+          Here is the wrinkle, and it is the reason this defect is so persistent. An STL stores the
+          orientation of each face <strong>twice</strong>: once as an explicit normal vector, and
+          again, implicitly, in the <strong>winding order</strong> of the triangle's three vertices.
+          List those vertices counter-clockwise as seen from outside and the winding says "out". List
+          the same three points in the opposite order and it says "in".
         </p>
 
         <p>
-          One backwards triangle in a model of ten thousand is enough to start an argument. The
-          surface no longer agrees with itself about which way is out.
+          Two sources of truth, and they are free to disagree. Many programs — slicers among them —
+          ignore the stored vector entirely and recompute the orientation from the winding, on the
+          reasonable grounds that the winding is harder to get wrong by accident. So a file can carry
+          a perfectly correct normal vector and still be treated as inside-out, because the vertices
+          behind it are wound backwards.
+        </p>
+
+        <p>
+          That is what a flipped face is: a triangle whose orientation contradicts its neighbours.
+          One of them, in a model of ten thousand, is enough to start an argument the surface cannot
+          settle — it no longer agrees with itself about which way is out.
         </p>
 
         <h2>Why flipped normals break a print but not a render</h2>
@@ -251,15 +260,26 @@
         <ol class="steps">
           <li>Open SliceReady and drop your STL or 3MF onto the page.</li>
           <li>
-            The mesh is analysed in a background thread. Flipped edges are counted and the damage is
-            highlighted on the model, so you can see where the surface argues with itself.
+            The mesh is analysed in a background thread and the damage is highlighted on the model,
+            so you can see exactly where the surface argues with itself.
           </li>
           <li>
             The repair runs, making the winding consistent across the whole surface, and you get a
-            plain-language ledger of exactly how many faces were corrected.
+            plain-language ledger of what changed — reported as
+            <strong>flipped edges</strong>, not flipped faces.
           </li>
           <li>Download the repaired STL and take it back to your slicer.</li>
         </ol>
+
+        <p>
+          That last count trips people up, so it is worth a sentence. Orientation is not something a
+          triangle has on its own — it is something two triangles either agree or disagree about,
+          across the edge they share. So a disagreement is detected, and counted, <em>per shared
+          edge</em>: an edge whose two faces both traverse it in the same direction is an edge where
+          the surface contradicts itself. One backwards triangle in the middle of a surface shows up
+          as three flipped edges, one per side. The number is not a face count and does not pretend
+          to be.
+        </p>
 
         <div class="limit">
           <p>
