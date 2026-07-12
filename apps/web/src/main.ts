@@ -7,7 +7,7 @@ import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './styles.css';
 
-import { renderPromo, SLICEMARGIN_URL } from './promo';
+import { SLICEMARGIN_URL } from './promo';
 import { mountDropzone } from './dropzone';
 import { createRepairWorker, repairInWorker, type RepairResult, type ManifoldReport, type Phase } from './repair-client';
 import { createViewer, type Viewer } from './viewer';
@@ -18,13 +18,15 @@ import { downloadLabel, errorMessageFor, phaseLabel, validateFile, type AppState
 const root = document.querySelector<HTMLDivElement>('#app');
 if (!root) throw new Error('#app not found');
 
-// promo appends the hero <header> and the <footer>. The working area belongs
-// between them, so it is inserted before the footer rather than appended after —
-// appending to root would leave the footer sandwiched in the middle of the page.
-renderPromo(root);
+// The hero <header> and the <footer> are already in index.html — static, so a
+// crawler reads them with no JavaScript run. The working area belongs between
+// them, so it is inserted before the footer rather than appended to root, which
+// would leave the footer sandwiched in the middle of the page.
+const footer = root.querySelector('footer');
+if (!footer) throw new Error('static footer missing from index.html');
 const work = document.createElement('main');
 work.className = 'work';
-root.querySelector('footer')!.before(work);
+footer.before(work);
 
 // Dropzone first (the idle state), then the status line, the viewer, and the
 // results. mountDropzone appends, so it must be called before the rest.

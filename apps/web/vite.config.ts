@@ -27,7 +27,38 @@ const guideEntries: Record<string, string> = existsSync(guidesDir)
     )
   : {};
 
+// The canonical host. Every canonical tag, og:url and JSON-LD URL in the guides
+// names the apex, so the sitemap must agree with them — a sitemap that lists a
+// different host than the canonicals is a sitemap that argues with itself.
+const ORIGIN = 'https://sliceready.app';
+
+// The sitemap is GENERATED from the guides on disk, for the same reason the entries
+// above are: a hand-written list is a list somebody forgets to update, and a guide
+// missing from the sitemap is a guide Google has to stumble onto.
+function sitemap() {
+  return {
+    name: 'sliceready-sitemap',
+    generateBundle() {
+      const urls = [
+        `${ORIGIN}/`,
+        `${ORIGIN}/guides/`,
+        ...Object.keys(guideEntries)
+          .map((key) => key.replace(/^guide-/, ''))
+          .sort()
+          .map((slug) => `${ORIGIN}/guides/${slug}/`),
+      ];
+      const body = urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n');
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`,
+      });
+    },
+  };
+}
+
 export default defineConfig({
+  plugins: [sitemap()],
   // Not a SPA: there is no router, and the guides are separate documents. Left on
   // the default 'spa', dev and preview answer every unmatched path with the app's
   // index.html — so /guides/<slug> (no trailing slash) silently served the app
