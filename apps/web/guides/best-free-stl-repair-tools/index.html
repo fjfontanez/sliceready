@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Best Free STL Repair Tools in 2026 (Honest List)</title>
+    <meta
+      name="description"
+      content="An honest list of the free STL repair tools that work in 2026 — browser and desktop, what each claims, and which to pick for the fault you actually have."
+    />
+    <link rel="canonical" href="https://sliceready.app/guides/best-free-stl-repair-tools/" />
+    <meta name="theme-color" content="#0b0b0c" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://sliceready.app/guides/best-free-stl-repair-tools/" />
+    <meta property="og:title" content="The Best Free STL Repair Tools in 2026 (Honest List)" />
+    <meta
+      property="og:description"
+      content="Written by the people behind one of the tools on the list — which is exactly why it names where ours loses."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f0a23a'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/guides.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "headline": "The best free STL repair tools in 2026",
+            "description": "An honest list of free STL repair tools, browser and desktop, and how to pick one for the fault you actually have.",
+            "datePublished": "2026-07-11",
+            "dateModified": "2026-07-11",
+            "author": { "@type": "Organization", "name": "SliceReady" },
+            "publisher": { "@type": "Organization", "name": "SliceReady" },
+            "mainEntityOfPage": "https://sliceready.app/guides/best-free-stl-repair-tools/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "SliceReady", "item": "https://sliceready.app/" },
+              { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://sliceready.app/guides/" },
+              { "@type": "ListItem", "position": 3, "name": "Best free STL repair tools", "item": "https://sliceready.app/guides/best-free-stl-repair-tools/" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is the best free STL repair tool?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "There is no single best one, because the tools differ in what they repair. For holes and flipped normals, any of the free browser repairers will do. For self-intersections or stray disconnected shells, you need one that specifically claims those. For thin walls, no repair tool helps at all — that needs a modelling application."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I repair an STL online without uploading it?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Several browser tools run the repair locally with WebAssembly and state that the file never leaves your device, including SliceReady, iamRapid and JustFixSTL. Others process the file on their own servers. Check the tool's own claim before dropping in a model you care about."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does a slicer repair a broken STL?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Slicers patch small gaps at slice time, but they do not repair the file, and the patching is a per-layer guess that changes with your settings. That is why a marginal model can slice cleanly at one layer height and shred at another. Repairing the mesh once is more reliable than re-rolling the dice on every print."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why does one repair tool fix my STL and another does not?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Because they run different repair passes. Closing holes, correcting normals, welding duplicate vertices, removing disconnected shells and resolving self-intersections are separate operations, and no free tool does all of them. If one tool fails, the fault is probably a pass it does not run."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="guide">
+      <nav class="guide-nav">
+        <a href="/">SliceReady</a>
+        <span class="sep">/</span>
+        <a href="/guides/">Guides</a>
+      </nav>
+
+      <article>
+        <h1>The best free STL repair tools in 2026</h1>
+        <p class="byline">Updated July 2026 · 7 min read</p>
+
+        <div class="answer">
+          <span class="label">Short answer</span>
+          <p>
+            There is no single best STL repair tool, because they do not all repair the same things.
+            Holes and flipped normals: any free browser repairer will do. Self-intersections or stray
+            disconnected shells: you need one that specifically claims them. Thin walls: no repair tool
+            on this list helps you, and any that says otherwise is lying.
+          </p>
+        </div>
+
+        <div class="limit">
+          <p>
+            <strong>Declare the bias up front.</strong> SliceReady is our tool, and it is on this list.
+            So everything here about the other tools is <em>what they publish about themselves</em>, as
+            of July 2026 — not a benchmark we ran. We have not tested them head to head, and we are not
+            going to imply we have.
+          </p>
+          <p>
+            The list names two tools that claim to repair <em>more</em> than ours does. That is not
+            generosity; it is the only way a comparison written by a competitor is worth reading.
+          </p>
+        </div>
+
+        <h2>First: what is actually wrong with your model?</h2>
+
+        <p>
+          This is the whole game, and almost every "best tools" list skips it. Picking a repairer before
+          you know the fault is how people burn an evening on a tool that was never going to help.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">The fault</th>
+                <th scope="col">Can a repair tool fix it?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Holes / open edges / "not watertight"</td>
+                <td>Yes — <a href="/guides/fix-holes-in-stl/">all of them claim this</a></td>
+              </tr>
+              <tr>
+                <td>Flipped or inverted normals</td>
+                <td>Yes — <a href="/guides/fix-flipped-normals-stl/">all of them claim this</a></td>
+              </tr>
+              <tr>
+                <td>Degenerate / zero-area triangles</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>Duplicate or unwelded vertices</td>
+                <td>Only some</td>
+              </tr>
+              <tr>
+                <td>Floating fragments / disconnected shells</td>
+                <td>Only some</td>
+              </tr>
+              <tr>
+                <td>Self-intersecting geometry</td>
+                <td>Rarely — very few claim it</td>
+              </tr>
+              <tr>
+                <td><strong>Thin walls</strong></td>
+                <td><strong>No. Not one. This needs modelling.</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Wrong scale or units</strong></td>
+                <td><strong>No — that is a slicer setting</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          Not sure which you have? Start with the
+          <a href="/guides/stl-wont-slice/">STL won't slice troubleshooting guide</a> — it triages the
+          symptom before it prescribes anything.
+        </p>
+
+        <h2>The browser tools</h2>
+
+        <p>
+          The interesting category, because none of them need an install and most of them never see your
+          file. Claims are each tool's own.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Tool</th>
+                <th scope="col">Your file goes…</th>
+                <th scope="col">Reads</th>
+                <th scope="col">Claims to fix</th>
+                <th scope="col">Source published?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>SliceReady</strong></td>
+                <td>Nowhere — stays local</td>
+                <td>STL (binary), 3MF</td>
+                <td>Holes, normals, degenerate triangles. <strong>Nothing else — no welding, no fragment removal, no self-intersections</strong></td>
+                <td><strong>Yes, GPL-2.0</strong></td>
+              </tr>
+              <tr>
+                <td>iamRapid</td>
+                <td>Nowhere, it says</td>
+                <td>STL (binary + ASCII), OBJ</td>
+                <td>The longest claim list here: holes, non-manifold edges, normals, degenerate faces, duplicate faces and vertices, <strong>self-intersections</strong>, disconnected shells</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>JustFixSTL</td>
+                <td>Nowhere, it says</td>
+                <td>STL, OBJ, OFF</td>
+                <td>Non-manifold edges and vertices, holes, degenerate triangles, <strong>vertex welding</strong>, normals, isolated vertices</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>Remeshy</td>
+                <td><strong>To its servers</strong></td>
+                <td>STL, OBJ, FBX, GLB, GLTF, PLY</td>
+                <td>Non-manifold geometry, holes, normals, degenerate faces. Widest format support on this list</td>
+                <td>Not stated</td>
+              </tr>
+              <tr>
+                <td>SphereLinks</td>
+                <td>Nowhere, it says</td>
+                <td>STL</td>
+                <td>Duplicate vertices, degenerate faces, normals. <strong>Detects holes and non-manifold edges without auto-fixing them</strong></td>
+                <td>Not stated</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          Two things worth pulling out of that table, because they are easy to miss.
+        </p>
+
+        <p>
+          <strong>"Online" and "uploaded" are not the same thing.</strong> Most of these run the repair
+          on your own machine and never transmit the model. One of them — Remeshy — says plainly that
+          processing happens on its servers. That is not a scandal; it is a trade-off, and it buys the
+          widest format support here. But if your model is a client's, or unreleased, or simply yours,
+          it is a trade-off you should make on purpose rather than by accident.
+        </p>
+
+        <p>
+          <strong>"Detects" is not "fixes".</strong> SphereLinks reports non-manifold edges and open
+          boundaries and then leaves them for you to repair elsewhere. That is honest of it, and it is
+          also the difference between a diagnosis and a cure.
+        </p>
+
+        <h2>Where our own tool loses</h2>
+
+        <p>
+          Read our row again. <strong>iamRapid and JustFixSTL claim to repair more faults than
+          SliceReady does.</strong> We close holes, correct normals and drop degenerate triangles —
+          three things, and we say so precisely because it is only three. We do not weld duplicate
+          vertices. We do not remove disconnected shells. We do not touch self-intersections. If that
+          is your fault, go and use one of them; that is what this list is for.
+        </p>
+
+        <p>
+          We read fewer formats, too: no OBJ, and — today — not even ASCII STL. Both are on our list.
+          A list is not a feature, so until they ship they belong here, in the losing column.
+        </p>
+
+        <h2>Where it wins</h2>
+
+        <ul>
+          <li><strong>3MF input.</strong> Nothing else on this list reads it.</li>
+          <li>
+            <strong>You can read the source.</strong> Every browser tool here asks you to take its
+            privacy promise on faith. Ours is GPL and published. When the entire pitch is "your model
+            never leaves your computer", being able to check that is the pitch.
+          </li>
+          <li>
+            <strong>It admits failure.</strong> You get a count of what changed and what did not, and
+            when the mesh is still broken it says so — <em>"Partially fixed — this mesh is still not
+            watertight"</em> — instead of handing you a green tick and a file that will fail on the
+            plate.
+          </li>
+        </ul>
+
+        <h2>The desktop tools</h2>
+
+        <ul>
+          <li>
+            <strong>Blender</strong> — free, open source, and the honest answer to everything a repair
+            tool cannot do: thickening thin walls, remeshing, hollowing, sculpting, boolean. The
+            learning curve is real. So is the capability.
+          </li>
+          <li>
+            <strong>Meshmixer</strong> — discontinued by Autodesk, still runs, no longer maintained.
+            <a href="/guides/meshmixer-alternative/">What to use instead, and why</a>.
+          </li>
+          <li>
+            <strong>Fusion 360</strong> — where Autodesk points former Meshmixer users. Free for
+            personal, non-commercial use.
+          </li>
+        </ul>
+
+        <h2>What your slicer already does — and why it isn't a fix</h2>
+
+        <p>
+          Cura, OrcaSlicer and Bambu Studio all patch small gaps at slice time. That is genuinely
+          useful and it is not a repair: the file on disk stays broken, and the patching is a guess made
+          per layer, which is exactly why a marginal model slices cleanly at one layer height and
+          shreds at the next.
+        </p>
+
+        <p>
+          If your model only works at 0.2&nbsp;mm and falls apart at 0.16&nbsp;mm, stop hunting for the
+          layer height that hides the problem. Fix the mesh once.
+        </p>
+
+        <h2 id="faq">Frequently asked questions</h2>
+
+        <div class="faq">
+          <h3>What is the best free STL repair tool?</h3>
+          <p>
+            There isn't one, and any list that gives you a single winner has not looked closely. The
+            tools run different repair passes. Match the tool to the fault: holes and normals are
+            universal, welding and disconnected shells are not, self-intersections are rare, and thin
+            walls are nobody's job on this list.
+          </p>
+
+          <h3>Can I repair an STL online without uploading it?</h3>
+          <p>
+            Yes — most of the browser tools here run the repair on your own machine. But not all of
+            them do, so read the tool's own claim rather than the word "online", which tells you
+            nothing about where your file goes.
+          </p>
+
+          <h3>Does a slicer repair a broken STL?</h3>
+          <p>
+            It patches, per layer, at slice time. It does not repair the file, and the patch changes
+            when your settings change. Repairing the mesh once beats re-rolling the dice on every print.
+          </p>
+
+          <h3>Why does one repair tool fix my STL and another does not?</h3>
+          <p>
+            Because they run different passes. If a tool fails on your model, the fault is very likely
+            an operation it simply does not perform — not a bug. Try one whose claim list actually
+            covers your defect.
+          </p>
+        </div>
+
+        <div class="guide-cta">
+          <p><strong>Holes, normals, or a 3MF?</strong></p>
+          <p>
+            That is the job SliceReady does. It repairs in your browser, nothing is uploaded, and the
+            report tells you the truth about what was fixed and what was not.
+          </p>
+          <p><a class="button" href="/">Repair my STL &rarr;</a></p>
+        </div>
+      </article>
+
+      <footer>
+        Built by the team behind
+        <a href="https://slicemargin.com" target="_blank" rel="noopener noreferrer">SliceMargin</a>.
+        SliceReady is free and open source — no upload, no account, no tracking.
+      </footer>
+    </div>
+  </body>
+</html>
