@@ -39,7 +39,18 @@ export default defineConfig({
     rollupOptions: {
       // Naming any input replaces Vite's implicit index.html entry, so the app
       // itself has to be listed here too or the SPA stops being built at all.
-      input: { main: resolve(here, 'index.html'), ...guideEntries },
+      input: {
+        main: resolve(here, 'index.html'),
+        // The guides index is a file directly under guides/, not one of the <slug>/
+        // directories, so the discovery above steps straight past it.
+        //
+        // Unlike the guide entries, this one is deliberately NOT existence-guarded.
+        // The index is the only inbound link most guides have — without it they are
+        // orphans no crawler ever reaches — so a missing index is not a case to
+        // degrade around. It should break the build, loudly, right here.
+        guides: resolve(guidesDir, 'index.html'),
+        ...guideEntries,
+      },
     },
   },
   // The engine is plain .mjs in a workspace package; Vite must not try to

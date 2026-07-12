@@ -19,11 +19,13 @@ describe('renderPromo', () => {
 
   // The guides are static pages outside the SPA. This link is the only path a
   // crawler has from the app to them, so it is a ranking dependency, not decor.
-  it('links to the guides so crawlers can reach them', () => {
+  // It must point at the guides INDEX: pointed at a single guide, every other
+  // guide is an orphan with no inbound link, and an orphan page does not rank.
+  it('links to the guides index so crawlers can reach every guide', () => {
     const root = document.createElement('div');
     renderPromo(root);
     const link = root.querySelector<HTMLAnchorElement>('a[data-testid="guides-link"]');
     expect(link).not.toBeNull();
-    expect(link!.getAttribute('href')).toBe('/guides/fix-non-manifold-stl/');
+    expect(link!.getAttribute('href')).toBe('/guides/');
   });
 });
