@@ -55,6 +55,13 @@ No `Co-Authored-By` or AI-attribution trailers.
 - Honor the honest-reporting rule: the tool never claims a repair it did not make.
 - New behavior needs a test.
 
+## Credits
+
+The contribution workflow and templates include material adapted from
+[Gentleman-Programming/gentle-ai](https://github.com/Gentleman-Programming/gentle-ai)
+under the MIT license. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for
+the complete upstream notice and the adapted file list.
+
 ## License
 
 By contributing, you agree your contributions are licensed under

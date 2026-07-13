@@ -1,3 +1,5 @@
+<!-- Adapted from Gentleman-Programming/gentle-ai under MIT. See THIRD_PARTY_NOTICES.md. -->
+
 <!-- ⚠️ READ BEFORE SUBMITTING
   Every PR must be linked to an issue that has the "status:approved" label.
   PRs without a linked approved issue are automatically rejected by CI.

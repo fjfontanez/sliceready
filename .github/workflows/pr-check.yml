@@ -1,3 +1,5 @@
+# Adapted from Gentleman-Programming/gentle-ai under MIT. See THIRD_PARTY_NOTICES.md.
+
 name: PR Validation
 
 on:
