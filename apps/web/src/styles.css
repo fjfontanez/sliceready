@@ -123,6 +123,35 @@ body {
   font-size: 0.95rem;
 }
 
+/* The hero had no anchors until the source link arrived, so it had no link style
+   either — and the browser default rendered it in visited-purple, which reads as
+   a broken page on a dark workshop. Molten means "act" here; a link asking you to
+   go and verify the privacy claim is exactly that. */
+.hero a {
+  color: var(--molten);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.hero a:hover { color: var(--molten-deep); }
+
+/* What goes in, what comes out. It sits with the hero rather than inside a guide
+   because a 3MF carries colour, materials and possibly several objects, and what
+   comes back carries none of them — the moment to say so is before the drop, not
+   after the download. */
+.io {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.io strong { color: var(--ink-soft); font-weight: 500; }
+.io .sep { color: var(--line); }
+
 .privacy {
   display: flex;
   gap: 0.85rem;

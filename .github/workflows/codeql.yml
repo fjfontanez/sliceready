@@ -1,0 +1,49 @@
+name: codeql
+
+# Static security analysis. Free on public repositories, so it costs nothing but
+# the minutes — and it looks for a class of defect no test suite is shaped to
+# find: injection, unsafe DOM writes, prototype pollution, path traversal.
+#
+# The last one is not hypothetical here. gga caught a prototype-chain lookup in
+# the 3MF unit table during review (`unit="constructor"` resolved to the Object
+# function and slipped past the unknown-unit guard). A human found that one. This
+# workflow is the machine that keeps looking after the humans have moved on.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, because a dependency or a query update can surface a finding in code
+    # nobody has touched. A scanner that only runs on diffs never re-examines what
+    # it already waved through.
+    - cron: '31 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      # The only elevated grant, and it is the one CodeQL exists for: writing the
+      # findings back to the Security tab. Everything else stays read-only.
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # security-and-quality is the wider pack: the security queries plus
+          # correctness and maintainability ones. This is a small codebase and the
+          # engine handles untrusted files from strangers — take the wider net.
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
