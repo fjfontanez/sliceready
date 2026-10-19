@@ -35,6 +35,9 @@ Every PR is validated by CI (`.github/workflows/pr-check.yml` + `ci.yml`):
 | Check PR Cognitive Load | ≤ 400 changed lines, or `size:exception` |
 | gates | `pre-pr.sh` passes (tests, typecheck + build, e2e smoke) |
 
+Dependabot PRs skip the three issue and label checks, since a bot cannot link an
+approved issue or label its own PR. They still run the size check and `gates`.
+
 ## Labels
 
 - `status:*` — issue lifecycle: `needs-review` → `needs-design` / `needs-info` → `approved`.
