@@ -51,11 +51,61 @@ jobs:
 
             core.setFailed(`❌ ${message}`);
 
+  # Dependabot cannot link an approved issue, and its PRs carry no type:* label
+  # unless dependabot.yml sets one, so the three issue and label checks skip its
+  # PRs. A skipped job reports success, which keeps those required checks green.
+  #
+  # The exemption holds only while every commit is a verified Dependabot commit:
+  # a human commit on its branch (including GitHub's "Update branch" merge)
+  # brings the checks back. Dependent jobs use !cancelled() rather than success()
+  # so a failure here runs the checks instead of skipping them.
+  dependabot-exemption:
+    name: Detect Dependabot-only PR
+    runs-on: ubuntu-latest
+    outputs:
+      exempt: ${{ steps.detect.outputs.exempt }}
+    steps:
+      - name: Check PR author and commit authors
+        id: detect
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const bot = 'dependabot[bot]';
+            const pr = context.payload.pull_request;
+
+            if (pr.user.login !== bot) {
+              console.log(`PR author is ${pr.user.login}; issue and label checks apply.`);
+              core.setOutput('exempt', 'false');
+              return;
+            }
+
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const foreign = commits.filter(
+              c => c.author?.login !== bot || !c.commit.verification?.verified,
+            );
+
+            if (foreign.length > 0) {
+              const list = foreign
+                .map(c => `${c.sha.slice(0, 7)} by ${c.author?.login ?? c.commit.author.email}`)
+                .join(', ');
+              console.log(`Non-Dependabot commits found (${list}); issue and label checks apply.`);
+              core.setOutput('exempt', 'false');
+              return;
+            }
+
+            console.log(`All ${commits.length} commit(s) are verified ${bot} commits; skipping issue and label checks.`);
+            core.setOutput('exempt', 'true');
+
   check-issue-reference:
     name: Check Issue Reference
-    # Dependabot cannot link an approved issue or label its own PRs; a skipped
-    # job reports success, so required checks still pass for its bumps.
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    needs: dependabot-exemption
+    if: ${{ !cancelled() && needs.dependabot-exemption.outputs.exempt != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify PR body references an issue
@@ -81,11 +131,12 @@ jobs:
 
   check-issue-approved:
     name: Check Issue Has status:approved
-    # Dependabot cannot link an approved issue or label its own PRs; a skipped
-    # job reports success, so required checks still pass for its bumps.
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    needs: [dependabot-exemption, check-issue-reference]
+    if: >-
+      ${{ !cancelled()
+      && needs.dependabot-exemption.outputs.exempt != 'true'
+      && needs.check-issue-reference.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: check-issue-reference
     steps:
       - name: Verify linked issue(s) have status:approved label
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
@@ -140,9 +191,8 @@ jobs:
 
   check-type-label:
     name: Check PR Has type:* Label
-    # Dependabot cannot link an approved issue or label its own PRs; a skipped
-    # job reports success, so required checks still pass for its bumps.
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    needs: dependabot-exemption
+    if: ${{ !cancelled() && needs.dependabot-exemption.outputs.exempt != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify PR has exactly one type:* label
