@@ -51,13 +51,14 @@ jobs:
 
             core.setFailed(`❌ ${message}`);
 
-  # Dependabot cannot link an approved issue, and no dependabot.yml gives its
-  # PRs a type:* label, so the three issue-first checks skip its PRs. A skipped
-  # job reports success, which keeps those required checks green.
+  # Dependabot cannot link an approved issue, and its PRs carry no type:* label
+  # unless dependabot.yml sets one, so the three issue and label checks skip its
+  # PRs. A skipped job reports success, which keeps those required checks green.
   #
-  # The exemption holds only while every commit is authored by Dependabot: a
-  # human commit pushed onto its branch brings the checks back. Dependent jobs
-  # use always() so a failure here runs the checks instead of skipping them.
+  # The exemption holds only while every commit is a verified Dependabot commit:
+  # a human commit on its branch (including GitHub's "Update branch" merge)
+  # brings the checks back. Dependent jobs use !cancelled() rather than success()
+  # so a failure here runs the checks instead of skipping them.
   dependabot-exemption:
     name: Detect Dependabot-only PR
     runs-on: ubuntu-latest
@@ -74,7 +75,7 @@ jobs:
             const pr = context.payload.pull_request;
 
             if (pr.user.login !== bot) {
-              console.log(`PR author is ${pr.user.login}; issue-first checks apply.`);
+              console.log(`PR author is ${pr.user.login}; issue and label checks apply.`);
               core.setOutput('exempt', 'false');
               return;
             }
@@ -85,24 +86,26 @@ jobs:
               pull_number: pr.number,
               per_page: 100,
             });
-            const foreign = commits.filter(c => c.author?.login !== bot);
+            const foreign = commits.filter(
+              c => c.author?.login !== bot || !c.commit.verification?.verified,
+            );
 
             if (foreign.length > 0) {
               const list = foreign
                 .map(c => `${c.sha.slice(0, 7)} by ${c.author?.login ?? c.commit.author.email}`)
                 .join(', ');
-              console.log(`Non-Dependabot commits found (${list}); issue-first checks apply.`);
+              console.log(`Non-Dependabot commits found (${list}); issue and label checks apply.`);
               core.setOutput('exempt', 'false');
               return;
             }
 
-            console.log(`All ${commits.length} commit(s) are by ${bot}; skipping issue-first checks.`);
+            console.log(`All ${commits.length} commit(s) are verified ${bot} commits; skipping issue and label checks.`);
             core.setOutput('exempt', 'true');
 
   check-issue-reference:
     name: Check Issue Reference
     needs: dependabot-exemption
-    if: always() && needs.dependabot-exemption.outputs.exempt != 'true'
+    if: ${{ !cancelled() && needs.dependabot-exemption.outputs.exempt != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify PR body references an issue
@@ -130,9 +133,9 @@ jobs:
     name: Check Issue Has status:approved
     needs: [dependabot-exemption, check-issue-reference]
     if: >-
-      always()
+      ${{ !cancelled()
       && needs.dependabot-exemption.outputs.exempt != 'true'
-      && needs.check-issue-reference.result == 'success'
+      && needs.check-issue-reference.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify linked issue(s) have status:approved label
@@ -189,7 +192,7 @@ jobs:
   check-type-label:
     name: Check PR Has type:* Label
     needs: dependabot-exemption
-    if: always() && needs.dependabot-exemption.outputs.exempt != 'true'
+    if: ${{ !cancelled() && needs.dependabot-exemption.outputs.exempt != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify PR has exactly one type:* label

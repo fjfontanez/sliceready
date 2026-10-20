@@ -36,9 +36,11 @@ Every PR is validated by CI (`.github/workflows/pr-check.yml` + `ci.yml`):
 | gates | `pre-pr.sh` passes (tests, typecheck + build, e2e smoke) |
 
 Dependabot PRs skip the three issue and label checks: a bot cannot link an
-approved issue, and nothing gives its PRs a `type:*` label. The exemption holds
-only while every commit on the PR is Dependabot's; push a commit of your own and
-the checks apply again. Dependabot PRs still run the size check and `gates`.
+approved issue, and its PRs get no `type:*` label. The exemption holds only while
+every commit on the PR is a verified Dependabot commit. Any commit of your own,
+including GitHub's **Update branch** merge, brings the checks back, so bring a
+Dependabot PR up to date with `@dependabot rebase` instead. Dependabot PRs still
+run the size check and `gates`.
 
 ## Labels
 
